@@ -47,11 +47,12 @@ end
     else
         maxval = maximum(map(d -> getmax(pd, d), dims))
     end
-    infty = round(maxval, RoundUp) + length(digits(round(Int, maxval)))
-    margin = infty * 0.1
+    infty = round(maxval, RoundUp) +
+        maxval > 1 ? length(digits(round(Int, maxval))) : 0
+    padding = maxval * 0.1
 
-    xlims := (-margin, maxval)
-    ylims := (-margin, infty + margin)
+    xlims := (-padding, maxval)
+    ylims := (-padding, infty + padding)
 
     xlabel := "birth"
     ylabel := "death"
@@ -61,14 +62,14 @@ end
         seriestype := :path
         label := ""
         color := :black
-        [-margin, infty], [-margin, infty]
+        [-padding, infty], [-padding, infty]
     end
     # infinity
     @series begin
         seriestype := :path
         label := "infinity"
         color := :grey
-        [-margin, infty], [infty, infty]
+        [-padding, infty], [infty, infty]
     end
     # Births and deaths.
     for dim in dims

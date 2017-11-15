@@ -1,3 +1,6 @@
+println("Updating Ripser submodule...")
+run(`git submodule update --init`)
+println("done.")
 println("Building Ripser wrapper...")
 run(`make`)
-println("Done.")
+println("done.")

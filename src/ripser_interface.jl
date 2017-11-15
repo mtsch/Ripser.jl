@@ -1,20 +1,12 @@
-# Get function pointer for ripser.
+# Function pointer for ripser.
 const shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", "libripser.so")
 const ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
 
-function ripser(mat::Vector{Vector{<:Real}}, ::Type{LowerTriangular};
-                dim_max = 1, thresh = Inf, modulus = 2)
+"""
+    ripser(mat; dim_max = 1, thresh = Inf, modulus = 2)
 
-    ripser_interface(collect(Iterators.flatten(mat)), dim_max, thresh, modulus)
-end
-
-function ripser(mat::Vector{Vector{<:Real}}, ::Type{UpperTriangular};
-                dim_max = 1, thresh = Inf, modulus = 2)
-
-    dist = collect(Iterators.flatten(reverse(mat)))
-    ripser_interface(dist, dim_max, thresh, modulus)
-end
-
+Run ripser on given matrix and return a PersistenceDiagram.
+"""
 function ripser(mat::AbstractMatrix{<:Real};
                 dim_max = 1, thresh = Inf, modulus = 2)
 
@@ -30,8 +22,7 @@ end
 function ripser(mat::UpperTriangular{<:Real};
                 dim_max = 1, thresh = Inf, modulus = 2)
 
-    mat_lt = mat'
-    ripser(mat_lt; dim_max = dim_max, thresh = thresh, modulus = modulus)
+    ripser(mat'; dim_max = dim_max, thresh = thresh, modulus = modulus)
 end
 
 function ripser_interface(dist::Vector{Float32}, dim_max = 1,
@@ -72,12 +63,11 @@ function parse_output(str)
     out
 end
 
-function read_lowertridist(path = joinpath(Pkg.dir("Ripser"), "deps", "ripser",
-                                           "examples", "projective_plane.lower_distance_matrix"))
+function read_lowertridist(path)
     mat = (map(x -> x == "" ? 0 : x, readcsv(path)))
     res = zeros(size(mat, 1) + 1, size(mat, 1) + 1)
     res[2:end, 1:end-1] .= mat
-    for i in 1:size(mat, 1)
+    for i in 1:size(res, 1)
         res[i, i] = 1
     end
     LowerTriangular(res)

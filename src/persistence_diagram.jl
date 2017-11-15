@@ -23,6 +23,14 @@ function Base.print(pd::PersistenceDiagram)
     end
 end
 
+function Base.:(==)(pd1::PersistenceDiagram, pd2::PersistenceDiagram)
+    length(pd1) == length(pd2) || return false
+    for i in 1:length(pd1)
+        pd1[i] == pd2[i] || return false
+    end
+    true
+end
+
 #==============
  Plots recipes
 ==============#

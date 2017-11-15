@@ -1,4 +1,5 @@
-CXXFLAGS := -fpic -shared -L. -Ofast -D USE_COEFFICIENTS -D NDEBUG
+CXXFLAGS := -std=gnu++11 -Ofast -D USE_COEFFICIENTS -D NDEBUG
+LIBFLAGS := -fpic -shared -L.
 
 define cxx_compile
   $(CXX) $^ $(CXXFLAGS) -o $@
@@ -9,7 +10,7 @@ clean:
 	rm libripser.so ripser.out
 
 %.so: %.cpp
-	$(call cxx_compile)
+	$(CXX) $(CXXFLAGS) libripser.cpp -o libripser.so
 
 ripser.out:
-	$(CXX) ripser/ripser.cpp -o ripser.out -Ofast -D NDEBUG -D USE_COEFFICIENTS
+	$(CXX) $(LIBFLAGS) $(CXXFLAGS) ripser/ripser.cpp -o ripser.out

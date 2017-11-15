@@ -10,7 +10,7 @@ clean:
 	rm libripser.so ripser.out
 
 %.so: %.cpp
-	$(CXX) $(CXXFLAGS) libripser.cpp -o libripser.so
+	$(CXX) $(LIBFLAGS) $(CXXFLAGS) libripser.cpp -o libripser.so
 
 ripser.out:
-	$(CXX) $(LIBFLAGS) $(CXXFLAGS) ripser/ripser.cpp -o ripser.out
+	$(CXX) $(CXXFLAGS) ripser/ripser.cpp -o ripser.out

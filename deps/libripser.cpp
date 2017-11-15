@@ -1,33 +1,20 @@
 #include "ripser/ripser.cpp"
-#include "ripser-wrapper.hpp"
+#include "libripser.hpp"
 /*
- * Simple wrapper to Ripser.
+ * Simple wrapper for Ripser that makes it callable from outside.
  */
 
-void printmat(index_t n, value_t **mat) {
-    for (int i = 0; i < n; ++i) {
-        std::cout << i << ": ";
-        for (int j = 0; j < i; ++j) {
-            std::cout << mat[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-compressed_lower_distance_matrix from_arrays(index_t n, value_t **mat) {
+compressed_lower_distance_matrix from_array(index_t n, value_t *mat) {
 	std::vector<value_t> distances;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j <= i; ++j) {
-            distances.push_back(mat[i][j]);
-        }
-    }
+    distances.assign(mat, mat + n);
+
 	return compressed_lower_distance_matrix(std::move(distances));
 }
 
 // Essentially a copy of the main function that takes arguments.
-void ripser(index_t len, value_t **mat, index_t dim_max, value_t threshold, coefficient_t modulus) {
+void ripser(index_t len, value_t *mat, index_t dim_max, value_t threshold, coefficient_t modulus) {
 
-    compressed_lower_distance_matrix dist = from_arrays(len, mat);
+    compressed_lower_distance_matrix dist = from_array(len, mat);
 
 	index_t n = dist.size();
 

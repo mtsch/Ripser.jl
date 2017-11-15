@@ -1,17 +1,49 @@
 # Get function pointer for ripser.
-const shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", "ripser-wrapper.so")
+const shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", "libripser.so")
 const ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
 
-function ripser(dist::Vector{Vector{Float32}}; dim_max = 1,
-                thresh = Inf, modulus = 2)
+function ripser(mat::Vector{Vector{<:Real}}, ::Type{LowerTriangular};
+                dim_max = 1, thresh = Inf, modulus = 2)
+
+    ripser_interface(collect(Iterators.flatten(mat)), dim_max, thresh, modulus)
+end
+
+function ripser(mat::Vector{Vector{<:Real}}, ::Type{UpperTriangular};
+                dim_max = 1, thresh = Inf, modulus = 2)
+
+    dist = collect(Iterators.flatten(reverse(mat)))
+    ripser_interface(dist, dim_max, thresh, modulus)
+end
+
+function ripser(mat::AbstractMatrix{<:Real};
+                dim_max = 1, thresh = Inf, modulus = 2)
+
+    dist = Float32[]
+    for i in 2:size(mat, 1)
+        for j in 1:(i-1)
+            push!(dist, mat[i, j])
+        end
+    end
+    ripser_interface(dist, dim_max, thresh, modulus)
+end
+
+function ripser(mat::UpperTriangular{<:Real};
+                dim_max = 1, thresh = Inf, modulus = 2)
+
+    mat_lt = mat'
+    ripser(mat_lt; dim_max = dim_max, thresh = thresh, modulus = modulus)
+end
+
+function ripser_interface(dist::Vector{Float32}, dim_max = 1,
+                          thresh = Inf, modulus = 2)
 
     origSTDOUT = STDOUT
     (r, w) = redirect_stdout()
     ccall(ripser_fptr,
           Void,
-          (Cint, Ptr{Ptr{Float32}}, Cint, Float32, Int16),
+          (Cint, Ptr{Float32}, Cint, Float32, Int16),
           length(dist), dist,
-          dim_max, Float32(thresh), Int16(modulus))
+          dim_max, thresh, modulus)
 
     close(w)
     res_str = String(map(Char, readavailable(r)))
@@ -23,9 +55,11 @@ end
 
 function parse_output(str)
     lines = split(str, '\n')
-    i = 3
+    i = 1
+    while !ismatch(r"persistence", lines[i]) i += 1 end
+
     out = Vector{Tuple{Float64, Float64}}[]
-    while lines[i] != ""
+    while i <= length(lines) && lines[i] != ""
         if ismatch(r"persistence", lines[i])
             push!(out, [])
         else
@@ -38,17 +72,13 @@ function parse_output(str)
     out
 end
 
-function readdistmat(path = joinpath(Pkg.dir("Ripser"), "deps", "ripser",
-                                     "examples", "projective_plane.lower_distance_matrix"))
-    conts = readcsv(path)
-    out = Vector{Float32}[]
-
-    for i in 1:size(conts, 1)
-        push!(out, [])
-        for j in 1:i
-            push!(out[end], conts[i, j])
-        end
+function read_lowertridist(path = joinpath(Pkg.dir("Ripser"), "deps", "ripser",
+                                           "examples", "projective_plane.lower_distance_matrix"))
+    mat = (map(x -> x == "" ? 0 : x, readcsv(path)))
+    res = zeros(size(mat, 1) + 1, size(mat, 1) + 1)
+    res[2:end, 1:end-1] .= mat
+    for i in 1:size(mat, 1)
+        res[i, i] = 1
     end
-
-    out
+    LowerTriangular(res)
 end

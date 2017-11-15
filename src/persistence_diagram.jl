@@ -12,6 +12,17 @@ Base.length(pd::PersistenceDiagram) = length(pd.data)
 
 dim(pd::PersistenceDiagram) = length(pd.data) - 1
 
+function Base.print(pd::PersistenceDiagram)
+    for d in 0:dim(pd)
+        println("persistence intervals in dim $d:")
+        for pair in pd.data[d+1]
+            b = string(pair[1])
+            d = isfinite(pair[2]) ? string(pair[2]) : " "
+            println("[$b,$d)")
+        end
+    end
+end
+
 #==============
  Plots recipes
 ==============#
@@ -19,20 +30,20 @@ function getmax(pd::PersistenceDiagram, d::Int)
     maximum(filter(isfinite, map(x -> x[2], pd.data[d+1])))
 end
 
-@recipe function f(pd::PersistenceDiagram, dims=1)
-    if length(dims) == 1
-        infty = getmax(pd, dims)
-    else
-        infty = maximum(map(d -> getmax(pd, d), dims))
+@recipe function f(pd::PersistenceDiagram; dims=nothing)
+    if dims == nothing
+        dims = 0:dim(pd)
     end
-    infty = round(infty, RoundUp) + length(digits(round(Int, infty)))
+    if length(dims) == 1
+        maxval = getmax(pd, dims)
+    else
+        maxval = maximum(map(d -> getmax(pd, d), dims))
+    end
+    infty = round(maxval, RoundUp) + length(digits(round(Int, maxval)))
     margin = infty * 0.1
 
-    lo = -margin
-    hi = infty + margin
-
-    xlims := (lo, hi)
-    ylims := (lo, hi)
+    xlims := (-margin, maxval)
+    ylims := (-margin, infty + margin)
 
     xlabel := "birth"
     ylabel := "death"
@@ -42,16 +53,15 @@ end
         seriestype := :path
         label := ""
         color := :black
-        [lo, infty], [lo, infty]
+        [-margin, infty], [-margin, infty]
     end
     # infinity
     @series begin
         seriestype := :path
         label := "infinity"
         color := :grey
-        [lo, infty], [infty, infty]
+        [-margin, infty], [infty, infty]
     end
-
     # Births and deaths.
     for dim in dims
         @series begin

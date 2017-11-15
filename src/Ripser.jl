@@ -1,5 +1,10 @@
 module Ripser
 
-# package code goes here
+using RecipesBase
 
-end # module
+export ripser, PersistenceDiagram, dim
+
+include("persistence_diagram.jl")
+include("test.jl")
+
+end

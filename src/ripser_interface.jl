@@ -1,13 +1,13 @@
+# Get function pointer for ripser.
+const shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", "ripser-wrapper.so")
+const ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
+
 function ripser(dist::Vector{Vector{Float32}}; dim_max = 1,
                 thresh = Inf, modulus = 2)
 
-    so_path = joinpath(Pkg.dir("Ripser"), "deps", "ripser-wrapper.so")
-    println(so_path)
-
     origSTDOUT = STDOUT
     (r, w) = redirect_stdout()
-
-    ccall((:ripser, "./ripser-wrapper.so"),
+    ccall(ripser_fptr,
           Void,
           (Cint, Ptr{Ptr{Float32}}, Cint, Float32, Int16),
           length(dist), dist,
@@ -18,7 +18,7 @@ function ripser(dist::Vector{Vector{Float32}}; dim_max = 1,
     close(r)
     redirect_stdout(origSTDOUT)
 
-    parse_output(res_str)
+    PersistenceDiagram(parse_output(res_str))
 end
 
 function parse_output(str)
@@ -38,7 +38,8 @@ function parse_output(str)
     out
 end
 
-function readdistmat(path="ripser/examples/projective_plane.lower_distance_matrix")
+function readdistmat(path = joinpath(Pkg.dir("Ripser"), "deps", "ripser",
+                                     "examples", "projective_plane.lower_distance_matrix"))
     conts = readcsv(path)
     out = Vector{Float32}[]
 
@@ -51,5 +52,3 @@ function readdistmat(path="ripser/examples/projective_plane.lower_distance_matri
 
     out
 end
-
-ripser(readdistmat())

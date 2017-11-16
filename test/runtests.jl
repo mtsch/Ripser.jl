@@ -7,10 +7,10 @@ const example_dir = joinpath(Pkg.dir("Ripser"), "examples")
 """
 Run the standalone version of ripser and return PersistenceDiagram.
 """
-function runripser(filename)
+function runripser(filename; dim_max=1)
     origSTDOUT = STDOUT
     (r, w) = redirect_stdout()
-    run(`../deps/ripser.out $filename`)
+    run(`../deps/ripser.out $filename --dim $dim_max`)
     close(w)
     res_str = String(map(Char, readavailable(r)))
     close(r)
@@ -65,9 +65,17 @@ end
 
 @testset "Compare with standalone" begin
     for d in readdir(example_dir)
+        if d == "1000"
+            dim_max = 1
+        elseif d == "100"
+            dim_max = 2
+        else
+            dim_max = 4
+        end
         for f in readdir(joinpath(example_dir, d))
             file = joinpath(example_dir, d, f)
-            @test runripser(file) == ripser(read_lowertridist(file))
+            @test runripser(file, dim_max = dim_max) ==
+                ripser(read_lowertridist(file), dim_max = dim_max)
         end
     end
 end

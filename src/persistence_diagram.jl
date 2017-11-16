@@ -1,9 +1,14 @@
 #======
  Types
 ======#
-struct PersistenceDiagram{T}
+struct PersistenceDiagram{T<:AbstractFloat}
     data::Vector{Vector{Tuple{T, T}}}
+
+    PersistenceDiagram{T}(data) where T =
+        new(convert(Vector{Vector{Tuple{T, T}}}, data))
 end
+
+PersistenceDiagram(data) = PersistenceDiagram{Float64}(data)
 
 Base.getindex(pd::PersistenceDiagram, i) = pd.data[i]
 Base.show(io::IO, pd::PersistenceDiagram) =
@@ -30,6 +35,28 @@ function Base.:(==)(pd1::PersistenceDiagram, pd2::PersistenceDiagram)
     end
     true
 end
+
+function Base.parse(::Type{PersistenceDiagram{T}}, str) where T
+    lines = split(str, '\n')
+    i = 1
+    while !ismatch(r"persistence", lines[i]) i += 1 end
+
+    out = Vector{Tuple{T, T}}[]
+    while i <= length(lines) && lines[i] != ""
+        if ismatch(r"persistence", lines[i])
+            push!(out, [])
+        else
+            int = parse.(T, matchall(r"[0-9.]+", String(lines[i])))
+            length(int) == 1 && push!(int, convert(T, Inf))
+            push!(out[end], (int[1], int[2]))
+        end
+        i += 1
+    end
+    PersistenceDiagram(out)
+end
+
+Base.parse(::Type{PersistenceDiagram}, str) =
+    parse(PersistenceDiagram{Float64}, str)
 
 #==============
  Plots recipes

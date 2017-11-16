@@ -16,7 +16,7 @@ function runripser(filename)
     close(r)
     redirect_stdout(origSTDOUT)
 
-    PersistenceDiagram(Ripser.parse_output(res_str))
+    parse(PersistenceDiagram, res_str)
 end
 
 @testset "Ripser output parsing" begin
@@ -27,7 +27,8 @@ end
            persistence intervals in dim 0:
             [0,0)
            """
-    @test Ripser.parse_output(str1) == [[(0, 0)]]
+    @test parse(PersistenceDiagram, str1) ==
+        PersistenceDiagram([[(0, 0)]])
 
     str2 = """
            persistence intervals in dim 0:
@@ -43,9 +44,10 @@ end
             [0,1)
             [1, )
            """
-    @test Ripser.parse_output(str2) == [[(0, 1),   (1, 2), (3, Inf)],
-                                        [(4, Inf), (0, 4), (1, 1)],
-                                        [(0, Inf), (0, 1), (1, Inf)]]
+    @test parse(PersistenceDiagram, str2) ==
+        PersistenceDiagram([[(0, 1),   (1, 2), (3, Inf)],
+                            [(4, Inf), (0, 4), (1, 1)],
+                            [(0, Inf), (0, 1), (1, Inf)]])
 end
 
 @testset "Printing" begin
@@ -57,10 +59,8 @@ end
     @test "$pdiag" == "persistence intervals in dim 0:\n[1.0, )\n"
 
     pdiag2 = ripser(read_lowertridist(example_file))
-    str = "$pdiag2"
 
-    @test PersistenceDiagram(Ripser.parse_output(str)) == pdiag2
-
+    @test parse(PersistenceDiagram, "$pdiag2") == pdiag2
 end
 
 @testset "Compare with standalone" begin

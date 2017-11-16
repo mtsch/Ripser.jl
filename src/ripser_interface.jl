@@ -40,31 +40,7 @@ function ripser_interface(dist::Vector{Float32}, dim_max = 1,
     close(r)
     redirect_stdout(origSTDOUT)
 
-    PersistenceDiagram(parse_output(res_str))
-end
-
-"""
-    parse_output(str)
-
-Parse the string output of Ripser and return a vector of vectors of tuples.
-"""
-function parse_output(str)
-    lines = split(str, '\n')
-    i = 1
-    while !ismatch(r"persistence", lines[i]) i += 1 end
-
-    out = Vector{Tuple{Float64, Float64}}[]
-    while i <= length(lines) && lines[i] != ""
-        if ismatch(r"persistence", lines[i])
-            push!(out, [])
-        else
-            int = parse.(Float64, matchall(r"[0-9.]+", String(lines[i])))
-            length(int) == 1 && push!(int, Inf)
-            push!(out[end], (int[1], int[2]))
-        end
-        i += 1
-    end
-    out
+    parse(PersistenceDiagram, res_str)
 end
 
 """

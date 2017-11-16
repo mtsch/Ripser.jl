@@ -20,7 +20,6 @@ function runripser(filename)
 end
 
 @testset "Ripser output parsing" begin
-
     str1 = """
            some
            header
@@ -47,19 +46,21 @@ end
     @test Ripser.parse_output(str2) == [[(0, 1),   (1, 2), (3, Inf)],
                                         [(4, Inf), (0, 4), (1, 1)],
                                         [(0, Inf), (0, 1), (1, Inf)]]
+end
 
+@testset "Printing" begin
     # Print and parse should not change the diagram.
-    pdiag = ripser(read_lowertridist(example_dir *
-                                     "/projective_plane.lower_distance_matrix"))
-    origSTDOUT = STDOUT
-    (r, w) = redirect_stdout()
-    print(pdiag)
-    close(w)
-    str = String(map(Char, readavailable(r)))
-    close(r)
-    redirect_stdout(origSTDOUT)
+    example_file = joinpath(example_dir,
+                            "projective_plane.lower_distance_matrix")
 
-    @test PersistenceDiagram(Ripser.parse_output(str)) == pdiag
+    pdiag = PersistenceDiagram([[(1.0, Inf)]])
+    @test "$pdiag" == "persistence intervals in dim 0:\n[1.0, )\n"
+
+    pdiag2 = ripser(read_lowertridist(example_file))
+    str = "$pdiag2"
+
+    @test PersistenceDiagram(Ripser.parse_output(str)) == pdiag2
+
 end
 
 @testset "Compare with standalone" begin

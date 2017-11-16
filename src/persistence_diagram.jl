@@ -7,18 +7,18 @@ end
 
 Base.getindex(pd::PersistenceDiagram, i) = pd.data[i]
 Base.show(io::IO, pd::PersistenceDiagram) =
-    print("$(dim(pd))d PersistenceDiagram")
+    print(io, "$(dim(pd))d PersistenceDiagram")
 Base.length(pd::PersistenceDiagram) = length(pd.data)
 
 dim(pd::PersistenceDiagram) = length(pd.data) - 1
 
-function Base.print(pd::PersistenceDiagram)
+function Base.print(io::IO, pd::PersistenceDiagram)
     for d in 0:dim(pd)
-        println("persistence intervals in dim $d:")
+        println(io, "persistence intervals in dim $d:")
         for pair in pd.data[d+1]
             b = string(pair[1])
             d = isfinite(pair[2]) ? string(pair[2]) : " "
-            println("[$b,$d)")
+            println(io, "[$b,$d)")
         end
     end
 end
@@ -34,6 +34,11 @@ end
 #==============
  Plots recipes
 ==============#
+"""
+    getmax(persistencediagram, dim)
+
+Get the max death time in a dimension, ignoring Inf.
+"""
 function getmax(pd::PersistenceDiagram, d::Int)
     maximum(filter(isfinite, map(x -> x[2], pd.data[d+1])))
 end

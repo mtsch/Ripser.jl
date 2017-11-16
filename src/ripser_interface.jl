@@ -43,6 +43,11 @@ function ripser_interface(dist::Vector{Float32}, dim_max = 1,
     PersistenceDiagram(parse_output(res_str))
 end
 
+"""
+    parse_output(str)
+
+Parse the string output of Ripser and return a vector of vectors of tuples.
+"""
 function parse_output(str)
     lines = split(str, '\n')
     i = 1
@@ -62,12 +67,28 @@ function parse_output(str)
     out
 end
 
-function read_lowertridist(path)
-    mat = (map(x -> x == "" ? 0 : x, readcsv(path)))
-    res = zeros(size(mat, 1) + 1, size(mat, 1) + 1)
-    res[2:end, 1:end-1] .= mat
-    for i in 1:size(res, 1)
-        res[i, i] = 1
+"""
+    read_lowertridist(filename)
+
+Read a lower triangular matrix in comma separated format from filename.
+Returns `LowerTriangular{Float32}`.
+The file should NOT contain the 1s on the diagonal.
+"""
+function read_lowertridist(filename)
+    text = split.(split(readstring(filename), '\n'), ',')
+    if text[1] == [""]
+        text = text[2:end]
     end
-    LowerTriangular(res)
+    n = length(text) + 1
+    res  = LowerTriangular(zeros(n, n))
+
+    for (i, line) in enumerate(text)
+        for (j, entry) in enumerate(line)
+            entry == "" && continue
+            res[i+1, j] = parse(Float32, entry)
+        end
+    end
+    res += I
+
+    res
 end

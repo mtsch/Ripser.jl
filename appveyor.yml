@@ -1,12 +1,24 @@
 environment:
   matrix:
   - JULIA_URL: "https://julialang-s3.julialang.org/bin/winnt/x86/0.6/julia-0.6-latest-win32.exe"
+    CYG_ROOT: C:\cygwin
+    CYG_SETUP: setup-x86.exe
+    CYG_MIRROR: http://cygwin.mirror.constant.com
+    CYG_CACHE: C:\cygwin\var\cache\setup
+    CYG_BASH: C:\cygwin\bin\bash
+    CC: gcc
+    TARGET: 32bit
+    TARGET_VARS: 32bit-vars
   - JULIA_URL: "https://julialang-s3.julialang.org/bin/winnt/x64/0.6/julia-0.6-latest-win64.exe"
-  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x86/julia-latest-win32.exe"
-  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x64/julia-latest-win64.exe"
+    CYG_ROOT: C:\cygwin64
+    CYG_SETUP: setup-x86_64.exe
+    CYG_MIRROR: http://cygwin.mirror.constant.com
+    CYG_CACHE: C:\cygwin64\var\cache\setup
+    CYG_BASH: C:\cygwin64\bin\bash
+    CC: gcc
+#  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x86/julia-latest-win32.exe"
+#  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x64/julia-latest-win64.exe"
 
-## uncomment the following lines to allow failures on nightly julia
-## (tests will run but not make your overall status red)
 #matrix:
 #  allow_failures:
 #  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x86/julia-latest-win32.exe"
@@ -44,4 +56,4 @@ build_script:
       Pkg.clone(pwd(), \"Ripser\"); Pkg.build(\"Ripser\")"
 
 test_script:
-  - C:\projects\julia\bin\julia -e "Pkg.test(\"Ripser\")"
+  - C:\projects\julia\bin\julia -e "Pkg.add(\"Plots\"); Pkg.add(\"UnicodePlots\"); Pkg.test(\"Ripser\")"

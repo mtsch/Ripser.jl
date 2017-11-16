@@ -1,6 +1,6 @@
-#======
- Types
-======#
+#=====
+ Type
+=====#
 struct PersistenceDiagram{T<:AbstractFloat}
     data::Vector{Vector{Tuple{T, T}}}
 
@@ -59,9 +59,9 @@ end
 Base.parse(::Type{PersistenceDiagram}, str) =
     parse(PersistenceDiagram{Float64}, str)
 
-#==============
- Plots recipes
-==============#
+#=============
+ Plots recipe
+=============#
 """
     getmax(persistencediagram, dim)
 

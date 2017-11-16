@@ -24,7 +24,8 @@ end
 function ripser_interface(dist::Vector{Float32}, dim_max = 1,
                           thresh = Inf, modulus = 2)
 
-    shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", "libripser.so")
+    libripser = is_windows() ? "libripser.dll" : "libripser.so"
+    shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", libripser)
     ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
 
     origSTDOUT = STDOUT

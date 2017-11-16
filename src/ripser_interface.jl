@@ -1,11 +1,7 @@
-# Function pointer for ripser.
-const shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", "libripser.so")
-const ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
-
 """
     ripser(mat; dim_max = 1, thresh = Inf, modulus = 2)
 
-Run ripser on given matrix and return a PersistenceDiagram.
+Run Ripser on given matrix and return a PersistenceDiagram.
 """
 function ripser(mat::AbstractMatrix{<:Real};
                 dim_max = 1, thresh = Inf, modulus = 2)
@@ -27,6 +23,9 @@ end
 
 function ripser_interface(dist::Vector{Float32}, dim_max = 1,
                           thresh = Inf, modulus = 2)
+
+    shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", "libripser.so")
+    ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
 
     origSTDOUT = STDOUT
     (r, w) = redirect_stdout()

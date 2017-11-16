@@ -1,6 +1,6 @@
 using Ripser
 using Base.Test
-using Plots; gr()
+using Plots; unicodeplots()
 
 """
 Run the standalone version of ripser and return PersistenceDiagram.

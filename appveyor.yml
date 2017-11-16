@@ -48,6 +48,10 @@ install:
         "C:\projects\julia-binary.exe")
 # Run installer silently, output to C:\projects\julia
   - C:\projects\julia-binary.exe /S /D=C:\projects\julia
+# Install cygwin
+  - ps: 'Start-FileDownload "http://cygwin.com/$env:CYG_SETUP" -FileName "$env:CYG_SETUP"'
+  - '%CYG_SETUP% --quiet-mode --no-shortcuts --only-site --root "%CYG_ROOT%" --site "%CYG_MIRROR%" --local-package-dir "%CYG_CACHE%" --packages automake,bison,gcc-core,libtool,make,gettext-devel,gettext,intltool,pkg-config,clang,llvm > NUL 2>&1'
+  - '%CYG_BASH% -lc "cygcheck -dc cygwin"'
 
 build_script:
 # Need to convert from shallow to complete for Pkg.clone to work

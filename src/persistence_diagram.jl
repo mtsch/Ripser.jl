@@ -11,19 +11,20 @@ end
 PersistenceDiagram(data) = PersistenceDiagram{Float64}(data)
 
 Base.getindex(pd::PersistenceDiagram, i) = pd.data[i]
-Base.show(io::IO, pd::PersistenceDiagram) =
-    print(io, "$(dim(pd))d PersistenceDiagram")
+Base.show(io::IO, pd::PersistenceDiagram{T}) where T =
+    print(io, "$(dim(pd))d PersistenceDiagram{$T}")
 Base.length(pd::PersistenceDiagram) = length(pd.data)
 
 dim(pd::PersistenceDiagram) = length(pd.data) - 1
 
-function Base.print(io::IO, pd::PersistenceDiagram)
+function Base.print(io::IO, pd::PersistenceDiagram{T}) where T
+    println(io, "PersistenceDiagram{$T}:")
     for d in 0:dim(pd)
-        println(io, "persistence intervals in dim $d:")
+        println(io, "  persistence intervals in dim $d:")
         for pair in pd.data[d+1]
             b = string(pair[1])
             d = isfinite(pair[2]) ? string(pair[2]) : " "
-            println(io, "[$b,$d)")
+            println(io, "   [$b,$d)")
         end
     end
 end

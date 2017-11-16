@@ -48,13 +48,13 @@ end
 
 Read a lower triangular matrix in comma separated format from filename.
 Returns `LowerTriangular{Float32}`.
-The file should NOT contain the 1s on the diagonal.
+The file should NOT contain the 0s on the diagonal.
 """
 function read_lowertridist(filename)
     text = split.(split(readstring(filename), '\n'), ',')
-    if text[1] == [""]
-        text = text[2:end]
-    end
+    while text[1] == [""] shift!(text) end
+    while text[end] == [""] pop!(text) end
+
     n = length(text) + 1
     res  = LowerTriangular(zeros(n, n))
 
@@ -64,7 +64,6 @@ function read_lowertridist(filename)
             res[i+1, j] = parse(Float32, entry)
         end
     end
-    res += I
 
     res
 end

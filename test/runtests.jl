@@ -2,7 +2,7 @@ using Ripser
 using Base.Test
 using Plots; unicodeplots()
 
-const example_dir = joinpath(Pkg.dir("Ripser"), "deps", "ripser", "examples")
+const example_dir = joinpath(Pkg.dir("Ripser"), "examples")
 
 """
 Run the standalone version of ripser and return PersistenceDiagram.
@@ -52,30 +52,30 @@ end
 
 @testset "Printing" begin
     # Print and parse should not change the diagram.
-    example_file = joinpath(example_dir,
-                            "projective_plane.lower_distance_matrix")
-
+    example_file = joinpath(example_dir, "100", "torus_100.ldm")
     pdiag = PersistenceDiagram([[(1.0, Inf)]])
-    @test "$pdiag" == "persistence intervals in dim 0:\n[1.0, )\n"
-
     pdiag2 = ripser(read_lowertridist(example_file))
+    @test sprint(print, pdiag) ==
+        "PersistenceDiagram{Float64}:\n  persistence intervals in dim 0:\n   [1.0, )\n"
+    @test sprint(show, pdiag2) ==
+        "1d PersistenceDiagram{Float64}"
 
     @test parse(PersistenceDiagram, "$pdiag2") == pdiag2
 end
 
 @testset "Compare with standalone" begin
-    #TODO: more examples
-    # Example 2 is broken - ripser does not parse it correctly.
-    for f in readdir(example_dir)[[1,3]]
-        file = joinpath(example_dir, f)
-        @test runripser(file) == ripser(read_lowertridist(file))
+    for d in readdir(example_dir)
+        for f in readdir(joinpath(example_dir, d))
+            file = joinpath(example_dir, d, f)
+            @test runripser(file) == ripser(read_lowertridist(file))
+        end
     end
 end
 
 @testset "Matrix types" begin
     # Test if using different kinds of matrices returns the same result.
-    for f in readdir(example_dir)
-        file = joinpath(example_dir, f)
+    for f in readdir(joinpath(example_dir, "20"))
+        file = joinpath(example_dir, "20", f)
         mat = read_lowertridist(file)
         @test ripser(mat) ==          # LowerTriangular
               ripser(mat') ==         # UpperTriangular
@@ -86,8 +86,8 @@ end
 end
 
 @testset "Plotting does not crash" begin
-    for f in readdir(example_dir)
-        file = joinpath(example_dir, f)
+    for f in readdir(joinpath(example_dir, "100"))
+        file = joinpath(example_dir, "100", f)
         mat = read_lowertridist(file)
         @test plot(ripser(mat)) != nothing
     end

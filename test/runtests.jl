@@ -2,6 +2,8 @@ using Ripser
 using Base.Test
 using Plots; unicodeplots()
 
+const example_dir = joinpath(Pkg.dir("Ripser"), "deps", "ripser", "examples")
+
 """
 Run the standalone version of ripser and return PersistenceDiagram.
 """
@@ -45,13 +47,23 @@ end
     @test Ripser.parse_output(str2) == [[(0, 1),   (1, 2), (3, Inf)],
                                         [(4, Inf), (0, 4), (1, 1)],
                                         [(0, Inf), (0, 1), (1, Inf)]]
+
+    # Print and parse should not change the diagram.
+    pdiag = ripser(read_lowertridist(example_dir *
+                                     "/projective_plane.lower_distance_matrix"))
+    origSTDOUT = STDOUT
+    (r, w) = redirect_stdout()
+    print(pdiag)
+    close(w)
+    str = String(map(Char, readavailable(r)))
+    close(r)
+    redirect_stdout(origSTDOUT)
+
+    @test PersistenceDiagram(Ripser.parse_output(str)) == pdiag
 end
 
 @testset "Compare with standalone" begin
     #TODO: more examples
-
-    example_dir = "../deps/ripser/examples"
-
     # Example 2 is broken - ripser does not parse it correctly.
     for f in readdir(example_dir)[[1,3]]
         file = joinpath(example_dir, f)
@@ -61,9 +73,6 @@ end
 
 @testset "Matrix types" begin
     # Test if using different kinds of matrices returns the same result.
-
-    example_dir = "../deps/ripser/examples"
-
     for f in readdir(example_dir)
         file = joinpath(example_dir, f)
         mat = read_lowertridist(file)
@@ -76,7 +85,6 @@ end
 end
 
 @testset "Plotting does not crash" begin
-    example_dir = "../deps/ripser/examples"
     for f in readdir(example_dir)
         file = joinpath(example_dir, f)
         mat = read_lowertridist(file)

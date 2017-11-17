@@ -39,4 +39,4 @@ read_lowertridist(filename)
 ```
 
 Read lower diagonal matrix in comma-separated format. See
-[`examples`](`./examples`) for example files.
+[`examples`](`examples`) for example files.

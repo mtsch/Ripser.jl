@@ -26,5 +26,17 @@ PersistenceDiagram
 ```
 
 The type returned by `ripser`. Contains a vector of vectors of persistence pairs
-(`Tuple{Float64, Float64}`). Can be indexed like an array or plotted with
-`plot`, giving a persistence diagram plot.
+(`Tuple{Float64, Float64}`). Operations:
+
+* `pd[i]`: indexing (like an array). Note: the indexing is 1-based.
+* `dim(pd)`: get the maximum dimension of `pd`.
+* `print(pd)`: show all persistence pairs.
+* `plot(pd)`: plot a persistence diagram using
+  [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
+
+```
+read_lowertridist(filename)
+```
+
+Read lower diagonal matrix in comma-separated format. See
+[`examples`](`./examples`) for example files.

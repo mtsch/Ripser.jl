@@ -18,8 +18,8 @@ Run Ripser on a distance matrix, returning a `PersistenceDiagram`. Arguments:
   unless the type of matrix is `UpperTriangular`.
 * `dim_max`: compute persistent homology up to this dimension.
 * `threshold`: compute Rips complexes up to this diameter.
-* `modulus`: compute homology with coefficients in the primer field Z/_p_Z,
-  where _p_ is the value given.
+* `modulus`: compute homology with coefficients in the primer field Z/*p*Z,
+  where *p* is the value given.
 
 ```
 PersistenceDiagram

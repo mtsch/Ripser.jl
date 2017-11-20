@@ -43,7 +43,7 @@ function Base.parse(::Type{PersistenceDiagram{T}}, str) where T
     while !ismatch(r"persistence", lines[i]) i += 1 end
 
     out = Vector{Tuple{T, T}}[]
-    while i <= length(lines) && lines[i] != ""
+    while i ≤ length(lines) && lines[i] ≠ ""
         if ismatch(r"persistence", lines[i])
             push!(out, [])
         else
@@ -72,6 +72,8 @@ function getmax(pd::PersistenceDiagram, d::Int)
 end
 
 @recipe function f(pd::PersistenceDiagram; dims=nothing)
+    dims ≠ nothing && maximum(dims) > dim(pd) &&
+        error("dims can't be larger than diagram dimension!")
     if dims == nothing
         dims = 0:dim(pd)
     end
@@ -81,7 +83,7 @@ end
         maxval = maximum(map(d -> getmax(pd, d), dims))
     end
     infty = round(maxval, RoundUp) +
-        maxval > 1 ? length(digits(round(Int, maxval))) : 0
+        (maxval > 1 ? length(digits(round(Int, maxval))) : 0)
     padding = maxval * 0.1
 
     xlims := (-padding, maxval)

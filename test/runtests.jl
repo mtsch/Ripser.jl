@@ -7,10 +7,14 @@ const example_dir = joinpath(Pkg.dir("Ripser"), "examples")
 """
 Run the standalone version of ripser and return PersistenceDiagram.
 """
-function runripser(filename; dim_max=1)
+function runripser(filename; dim_max=1, modulus=2, thresh=Inf)
     origSTDOUT = STDOUT
     (r, w) = redirect_stdout()
-    run(`../deps/ripser.out $filename --dim $dim_max`)
+    if !isfinite(thresh)
+        run(`../deps/ripser.out $filename --dim $dim_max --modulus $modulus`)
+    else
+        run(`../deps/ripser.out $filename --dim $dim_max --modulus $modulus --threshold $thresh`)
+    end
     close(w)
     res_str = String(map(Char, readavailable(r)))
     close(r)
@@ -19,84 +23,106 @@ function runripser(filename; dim_max=1)
     parse(PersistenceDiagram, res_str)
 end
 
-@testset "Ripser output parsing" begin
-    str1 = """
-           some
-           header
-           text
-           persistence intervals in dim 0:
-            [0,0)
-           """
-    @test parse(PersistenceDiagram, str1) ==
-        PersistenceDiagram([[(0, 0)]])
+@testset "basics" begin
+    @testset "ripser output parsing" begin
+        str1 = """
+               some
+               header
+               text
+               persistence intervals in dim 0:
+                [0,0)
+               """
+        @test parse(PersistenceDiagram, str1) ==
+            PersistenceDiagram([[(0, 0)]])
 
-    str2 = """
-           persistence intervals in dim 0:
-            [0,1)
-            [1,2)
-            [3, )
-           persistence intervals in dim 1:
-            [4, )
-            [0,4)
-            [1,1)
-           persistence intervals in dim 2:
-            [0, )
-            [0,1)
-            [1, )
-           """
-    @test parse(PersistenceDiagram, str2) ==
-        PersistenceDiagram([[(0, 1),   (1, 2), (3, Inf)],
-                            [(4, Inf), (0, 4), (1, 1)],
-                            [(0, Inf), (0, 1), (1, Inf)]])
+        str2 = """
+               persistence intervals in dim 0:
+                [0,1)
+                [1,2)
+                [3, )
+               persistence intervals in dim 1:
+                [4, )
+                [0,4)
+                [1,1)
+               persistence intervals in dim 2:
+                [0, )
+                [0,1)
+                [1, )
+               """
+        @test parse(PersistenceDiagram, str2) ==
+            PersistenceDiagram([[(0, 1),   (1, 2), (3, Inf)],
+                                [(4, Inf), (0, 4), (1, 1)],
+                                [(0, Inf), (0, 1), (1, Inf)]])
+    end
+
+    @testset "printing" begin
+        # Print and parse should not change the diagram.
+        example_file = joinpath(example_dir, "100", "torus_100.ldm")
+        pdiag = PersistenceDiagram([[(1.0, Inf)]])
+        pdiag2 = ripser(read_lowertridist(example_file))
+        @test sprint(print, pdiag) ==
+            "PersistenceDiagram{Float64}:\n  persistence intervals in dim 0:\n   [1.0, )\n"
+        @test sprint(show, pdiag2) ==
+            "1d PersistenceDiagram{Float64}"
+
+        @test parse(PersistenceDiagram, "$pdiag2") == pdiag2
+    end
+
+    @testset "invalid argument errors" begin
+        example_file = joinpath(example_dir, "100", "torus_100.ldm")
+        data = read_lowertridist(example_file)
+
+        @test all(Ripser.isprime.([2, 3, 5, 7, 11, 13, 17, 19, 23, 29]))
+        @test all(.!Ripser.isprime.([1, 6, 8, 9, 12, 14, 15, 18, 20, 21, 27, 33]))
+
+        @test_throws ErrorException ripser(data, dim_max = -1)
+        @test_throws ErrorException ripser(data, modulus = 6)
+        @test_throws ErrorException ripser(data, modulus = 15)
+        @test_throws ErrorException ripser(data, thresh  = -0.1)
+        @test_throws ErrorException ripser(data, thresh  = 0)
+        @test_throws ErrorException ripser(data, thresh  = -5)
+    end
+
+    @testset "matrix types" begin
+        # Test if using different kinds of matrices returns the same result.
+        for f in readdir(joinpath(example_dir, "20"))
+            file = joinpath(example_dir, "20", f)
+            mat = read_lowertridist(file)
+            @test ripser(mat) ==          # LowerTriangular
+                  ripser(mat') ==         # UpperTriangular
+                  ripser(sparse(mat)) ==  # SparseMatrixCSC
+                  ripser(full(mat)) ==    # Matrix
+                  ripser(Symmetric(mat')) # Symmetric
+        end
+    end
+
+    @testset "plotting" begin
+        for f in readdir(joinpath(example_dir, "100"))
+            file = joinpath(example_dir, "100", f)
+            mat = read_lowertridist(file)
+            diagram = ripser(mat)
+            @test plot(diagram) ≠ nothing
+            @test plot(diagram, dims = 0) ≠ nothing
+            @test_throws ErrorException plot(diagram, dims = 1:100)
+            @test_throws ErrorException plot(diagram, dims = 100)
+        end
+    end
 end
 
-@testset "Printing" begin
-    # Print and parse should not change the diagram.
-    example_file = joinpath(example_dir, "100", "torus_100.ldm")
-    pdiag = PersistenceDiagram([[(1.0, Inf)]])
-    pdiag2 = ripser(read_lowertridist(example_file))
-    @test sprint(print, pdiag) ==
-        "PersistenceDiagram{Float64}:\n  persistence intervals in dim 0:\n   [1.0, )\n"
-    @test sprint(show, pdiag2) ==
-        "1d PersistenceDiagram{Float64}"
-
-    @test parse(PersistenceDiagram, "$pdiag2") == pdiag2
-end
-
-@testset "Compare with standalone" begin
-    for d in readdir(example_dir)
-        if d == "1000"
+@testset "compare with standalone" begin
+    for dir in readdir(example_dir), m in [2,3,7], t in [0.1, 2.5, 5, Inf]
+        if dir == "1000"
             dim_max = 1
-        elseif d == "100"
-            dim_max = 2
+        elseif dir == "100"
+            dim_max = [1, 2]
         else
-            dim_max = 4
+            dim_max = [1, 2, 3, 4]
         end
-        for f in readdir(joinpath(example_dir, d))
-            file = joinpath(example_dir, d, f)
-            @test runripser(file, dim_max = dim_max) ==
-                ripser(read_lowertridist(file), dim_max = dim_max)
+        for f in readdir(joinpath(example_dir, dir)), d in dim_max
+            file = joinpath(example_dir, dir, f)
+            data = read_lowertridist(file)
+            @test runripser(file, dim_max = d, modulus = m, thresh  = t) ==
+                  ripser(data, dim_max = d, modulus = m, thresh  = t)
         end
-    end
-end
-
-@testset "Matrix types" begin
-    # Test if using different kinds of matrices returns the same result.
-    for f in readdir(joinpath(example_dir, "20"))
-        file = joinpath(example_dir, "20", f)
-        mat = read_lowertridist(file)
-        @test ripser(mat) ==          # LowerTriangular
-              ripser(mat') ==         # UpperTriangular
-              ripser(sparse(mat)) ==  # SparseMatrixCSC
-              ripser(full(mat)) ==    # Matrix
-              ripser(Symmetric(mat')) # Symmetric
-    end
-end
-
-@testset "Plotting does not crash" begin
-    for f in readdir(joinpath(example_dir, "100"))
-        file = joinpath(example_dir, "100", f)
-        mat = read_lowertridist(file)
-        @test plot(ripser(mat)) != nothing
     end
 end

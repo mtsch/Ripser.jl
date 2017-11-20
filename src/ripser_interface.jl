@@ -23,6 +23,9 @@ end
 
 function ripser_interface(dist::Vector{Float32}, dim_max = 1,
                           thresh = Inf, modulus = 2)
+    isprime(modulus) || error("modulus must be a prime number!")
+    dim_max ≥ 0      || error("dim_max must be non-negative!")
+    thresh > 0       || error("thresh must be positive!")
 
     libripser = is_windows() ? "libripser.dll" : "libripser.so"
     shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", libripser)
@@ -67,4 +70,19 @@ function read_lowertridist(filename)
     end
 
     res
+end
+
+function isprime(n)
+    if iseven(n) || n < 2
+        n == 2
+    else
+        p = 3
+        q = n / p
+        while p ≤ q
+            iszero(n % p) && return false
+            p += 2
+            q = n / p
+        end
+        true
+    end
 end

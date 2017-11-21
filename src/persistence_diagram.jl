@@ -51,7 +51,7 @@ function Base.parse(::Type{PersistenceDiagram{T}}, str) where T
         end
         i += 1
     end
-    PersistenceDiagram(out)
+    PersistenceDiagram{T}(out)
 end
 
 Base.parse(::Type{PersistenceDiagram}, str) =

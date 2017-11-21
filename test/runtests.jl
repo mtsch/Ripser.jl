@@ -84,7 +84,11 @@ end
     end
 
     @testset "float types" begin
-        warn("TODO: check for Float32 and check eltype!")
+        for T in [Float64, Float32, Float16]
+            diagram = ripser(rand(T, 10, 10))
+            @test eltype(diagram) == T
+            @test typeof(diagram) == PersistenceDiagram{T}
+        end
     end
 
     @testset "matrix types" begin
@@ -107,8 +111,14 @@ end
             diagram = ripser(mat)
             @test plot(diagram) ≠ nothing
             @test plot(diagram, dims = 0) ≠ nothing
+            @test barcode(diagram) ≠ nothing
+            @test barcode(diagram, dims = 0) ≠ nothing
             @test_throws ErrorException plot(diagram, dims = 1:100)
             @test_throws ErrorException plot(diagram, dims = 100)
+            @test_throws ErrorException plot(diagram, dims = -1)
+            @test_throws ErrorException barcode(diagram, dims = 1:100)
+            @test_throws ErrorException barcode(diagram, dims = 100)
+            @test_throws ErrorException barcode(diagram, dims = -1)
         end
     end
 end

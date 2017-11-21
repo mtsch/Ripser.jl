@@ -12,7 +12,7 @@ function ripser(mat::AbstractMatrix{<:Real};
             push!(dist, mat[i, j])
         end
     end
-    ripser_interface(dist, dim_max, thresh, modulus)
+    ripser_interface(dist, dim_max, thresh, modulus, eltype(mat))
 end
 
 function ripser(mat::UpperTriangular{<:Real};
@@ -21,8 +21,8 @@ function ripser(mat::UpperTriangular{<:Real};
     ripser(mat'; dim_max = dim_max, thresh = thresh, modulus = modulus)
 end
 
-function ripser_interface(dist::Vector{Float32}, dim_max = 1,
-                          thresh = Inf, modulus = 2)
+function ripser_interface(dist::Vector{Float32}, dim_max::Integer,
+                          thresh::Real, modulus::Integer, T::Type)
     isprime(modulus) || error("modulus must be a prime number!")
     dim_max ≥ 0      || error("dim_max must be non-negative!")
     thresh > 0       || error("thresh must be positive!")
@@ -44,7 +44,7 @@ function ripser_interface(dist::Vector{Float32}, dim_max = 1,
     close(r)
     redirect_stdout(origSTDOUT)
 
-    parse(PersistenceDiagram, res_str)
+    parse(PersistenceDiagram{T}, res_str)
 end
 
 """

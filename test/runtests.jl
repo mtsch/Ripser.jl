@@ -83,6 +83,10 @@ end
         @test_throws ErrorException ripser(data, thresh  = -5)
     end
 
+    @testset "float types" begin
+        warn("TODO: check for Float32 and check eltype!")
+    end
+
     @testset "matrix types" begin
         # Test if using different kinds of matrices returns the same result.
         for f in readdir(joinpath(example_dir, "20"))

@@ -28,7 +28,7 @@ function ripser_interface(dist::Vector{Float32}, dim_max = 1,
     thresh > 0       || error("thresh must be positive!")
 
     libripser = is_windows() ? "libripser.dll" : "libripser.so"
-    shlib_path  = joinpath(Pkg.dir("Ripser"), "deps", libripser)
+    shlib_path = joinpath(Pkg.dir("Ripser"), "deps", libripser)
     ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
 
     origSTDOUT = STDOUT

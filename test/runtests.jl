@@ -13,7 +13,8 @@ function runripser(filename; dim_max=1, modulus=2, thresh=Inf)
     if !isfinite(thresh)
         run(`../deps/ripser.out $filename --dim $dim_max --modulus $modulus`)
     else
-        run(`../deps/ripser.out $filename --dim $dim_max --modulus $modulus --threshold $thresh`)
+        run(`../deps/ripser.out $filename
+             --dim $dim_max --modulus $modulus --threshold $thresh`)
     end
     close(w)
     res_str = String(map(Char, readavailable(r)))
@@ -61,7 +62,8 @@ end
         pdiag = PersistenceDiagram([[(1.0, Inf)]])
         pdiag2 = ripser(read_lowertridist(example_file))
         @test sprint(print, pdiag) ==
-            "PersistenceDiagram{Float64}:\n  persistence intervals in dim 0:\n   [1.0, )\n"
+            "PersistenceDiagram{Float64}:\n" *
+            "  persistence intervals in dim 0:\n   [1.0, )\n"
         @test sprint(show, pdiag2) ==
             "1d PersistenceDiagram{Float64}"
 
@@ -73,7 +75,8 @@ end
         data = read_lowertridist(example_file)
 
         @test all(Ripser.isprime.([2, 3, 5, 7, 11, 13, 17, 19, 23, 29]))
-        @test all(.!Ripser.isprime.([1, 6, 8, 9, 12, 14, 15, 18, 20, 21, 27, 33]))
+        @test all(.!Ripser.isprime.([1,  6,  8,  9,  12, 14,
+                                     15, 18, 20, 21, 27, 33]))
 
         @test_throws ErrorException ripser(data, dim_max = -1)
         @test_throws ErrorException ripser(data, modulus = 6)
@@ -119,6 +122,8 @@ end
             @test_throws ErrorException barcode(diagram, dims = 1:100)
             @test_throws ErrorException barcode(diagram, dims = 100)
             @test_throws ErrorException barcode(diagram, dims = -1)
+            @test_throws ErrorException barcode(zeros(3, 3))
+            @test_throws ErrorException barcode(diagram, 1:2)
         end
     end
 end

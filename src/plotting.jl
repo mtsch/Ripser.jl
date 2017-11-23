@@ -18,15 +18,22 @@ function check_dims(pd, dims)
     dims
 end
 
-@recipe function f(pd::PersistenceDiagram; dims=nothing)
-    _dims = check_dims(pd, dims)
-    if length(_dims) == 1
-        maxval = getmax(pd, _dims)
+function getinf_maxval(pd::PersistenceDiagram, dims)
+    if length(dims) == 1
+        maxval = getmax(pd, dims)
     else
-        maxval = maximum(map(d -> getmax(pd, d), _dims))
+        maxval = maximum(map(d -> getmax(pd, d), dims))
     end
     infty = round(maxval, RoundUp) +
         (maxval > 1 ? length(digits(round(Int, maxval))) : 0)
+
+    infty, maxval
+end
+
+@recipe function f(pd::PersistenceDiagram; dims=nothing)
+    _dims = check_dims(pd, dims)
+
+    infty, maxval = getinf_maxval(pd, _dims)
     padding = maxval * 0.1
 
     xlims --> (-padding, maxval)
@@ -75,11 +82,7 @@ end
 
     _dims = check_dims(pd, dims)
 
-    if length(_dims) == 1
-        maxval = getmax(pd, _dims)
-    else
-        maxval = maximum(map(d -> getmax(pd, d), _dims))
-    end
+    infty, maxval = getinf_maxval(pd, _dims)
     xlim --> [0, maxval]
 
     h = 1
@@ -91,11 +94,20 @@ end
 
             xs = T[]; ys = T[]
             for (birth, death) in pd.data[dim+1]
+                death = isfinite(death) ? death : infty
                 append!(xs, [birth, death, NaN])
                 append!(ys, [h, h, NaN])
                 h += 1
             end
             xs, ys
         end
+    end
+    xlim --> [1, h]
+
+    @series begin
+        seriestype := :path
+        label := "infinity"
+        color := :grey
+        [infty, infty], [1, h]
     end
 end

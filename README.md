@@ -35,19 +35,6 @@ Run Ripser on a distance matrix, returning a `PersistenceDiagram`. Arguments:
   where *p* is the value given.
 
 ```
-PersistenceDiagram
-```
-
-The type returned by `ripser`. Contains a vector of vectors of persistence pairs
-(`Tuple{Float64, Float64}`). Operations:
-
-* `pd[i]`: indexing (like an array). Note: the indexing is 1-based.
-* `dim(pd)`: get the maximum dimension of `pd`.
-* `print(pd)`: show all persistence pairs.
-* `plot(pd)`: plot a persistence diagram using
-  [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
-
-```
 read_lowertridist(filename)
 ```
 
@@ -55,7 +42,5 @@ Read lower diagonal matrix in comma-separated format. See
 [`examples`](examples) for example files.
 
 ## Notes
-
-This library is usable, but not completely finished.
 
 The current implementation relies on capturing Ripser's `STDOUT` and parsing it.

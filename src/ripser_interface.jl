@@ -31,20 +31,12 @@ function ripser_interface(dist::Vector{Float32}, dim_max::Integer,
     shlib_path = joinpath(Pkg.dir("Ripser"), "deps", libripser)
     ripser_fptr = Libdl.dlsym(Libdl.dlopen(shlib_path), :ripser)
 
-    origSTDOUT = STDOUT
-    (r, w) = redirect_stdout()
-    res_str = ""
-    try
+    res_str = @capture_out begin
         ccall(ripser_fptr,
               Void,
               (Cint, Ptr{Float32}, Cint, Float32, Int16),
               length(dist), dist,
               dim_max, thresh, modulus)
-    finally
-        close(w)
-        res_str = String(map(Char, readavailable(r)))
-        close(r)
-        redirect_stdout(origSTDOUT)
     end
 
     parsebarcode(T, res_str)

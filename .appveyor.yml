@@ -60,4 +60,4 @@ build_script:
       Pkg.clone(pwd(), \"Ripser\"); Pkg.build(\"Ripser\")"
 
 test_script:
-  - C:\projects\julia\bin\julia -e "Pkg.add(\"Plots\"); Pkg.add(\"UnicodePlots\"); Pkg.test(\"Ripser\")"
+  - C:\projects\julia\bin\julia -e "Pkg.clone(\"https://github.com/mtsch/PersistenceBarcodes.jl\"); Pkg.test(\"Ripser\")"

@@ -47,7 +47,7 @@ function ripser_interface(dist::Vector{Float32}, dim_max::Integer,
         redirect_stdout(origSTDOUT)
     end
 
-    parse(PersistenceDiagram{T}, res_str)
+    parsebarcode(T, res_str)
 end
 
 """
@@ -88,4 +88,23 @@ function isprime(n)
         end
         true
     end
+end
+
+function parsebarcode(::Type{T}, str) where T
+    lines = split(str, '\n')
+    i = 1
+    while !ismatch(r"persistence", lines[i]) i += 1 end
+
+    out = Vector{PersistencePair{T, Void}}[]
+    while i ≤ length(lines) && lines[i] ≠ ""
+        if ismatch(r"persistence", lines[i])
+            push!(out, [])
+        else
+            int = parse.(T, matchall(r"[0-9.]+", String(lines[i])))
+            length(int) == 1 && push!(int, convert(T, Inf))
+            push!(out[end], PersistencePair(int[1], int[2]))
+        end
+        i += 1
+    end
+    PersistenceBarcode(out)
 end

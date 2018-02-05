@@ -6,6 +6,19 @@
 
 Simple wrapper to [Ripser](https://github.com/Ripser/ripser) in Julia.
 
+## Installation
+
+This package requires
+[PersistenceBarcodes.jl](https://github.com/mtsch/PersistenceBarcodes.jl).
+
+To install, run:
+
+```
+Pkg.clone("https://github.com/mtsch/PersistenceBarcodes.jl")
+Pkg.clone("https://github.com/mtsch/Ripser.jl")
+Pkg.build("Ripser")
+```
+
 ## Usage
 
 ```
@@ -40,3 +53,9 @@ read_lowertridist(filename)
 
 Read lower diagonal matrix in comma-separated format. See
 [`examples`](examples) for example files.
+
+## Notes
+
+This library is usable, but not completely finished.
+
+The current implementation relies on capturing Ripser's `STDOUT` and parsing it.

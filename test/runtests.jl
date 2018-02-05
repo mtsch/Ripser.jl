@@ -1,11 +1,10 @@
 using Ripser
 using Base.Test
-using Plots; unicodeplots()
 
 const example_dir = joinpath(Pkg.dir("Ripser"), "examples")
 
 """
-Run the standalone version of ripser and return PersistenceDiagram.
+Run the standalone version of ripser and return PersistenceBarcode.
 """
 function runripser(filename; dim_max=1, modulus=2, thresh=Inf)
     origSTDOUT = STDOUT
@@ -21,7 +20,7 @@ function runripser(filename; dim_max=1, modulus=2, thresh=Inf)
     close(r)
     redirect_stdout(origSTDOUT)
 
-    parse(PersistenceDiagram, res_str)
+    Ripser.parsebarcode(Float64, res_str)
 end
 
 @testset "basics" begin
@@ -33,8 +32,8 @@ end
                persistence intervals in dim 0:
                 [0,0)
                """
-        @test parse(PersistenceDiagram, str1) ==
-            PersistenceDiagram([[(0, 0)]])
+        @test Ripser.parsebarcode(Float64, str1) ==
+            PersistenceBarcode([PersistencePair(0.0, 0.0)])
 
         str2 = """
                persistence intervals in dim 0:
@@ -50,24 +49,10 @@ end
                 [0,1)
                 [1, )
                """
-        @test parse(PersistenceDiagram, str2) ==
-            PersistenceDiagram([[(0, 1),   (1, 2), (3, Inf)],
-                                [(4, Inf), (0, 4), (1, 1)],
-                                [(0, Inf), (0, 1), (1, Inf)]])
-    end
-
-    @testset "printing" begin
-        # Print and parse should not change the diagram.
-        example_file = joinpath(example_dir, "100", "torus_100.ldm")
-        pdiag = PersistenceDiagram([[(1.0, Inf)]])
-        pdiag2 = ripser(read_lowertridist(example_file))
-        @test sprint(print, pdiag) ==
-            "PersistenceDiagram{Float64}:\n" *
-            "  persistence intervals in dim 0:\n   [1.0, )\n"
-        @test sprint(show, pdiag2) ==
-            "1d PersistenceDiagram{Float64}"
-
-        @test parse(PersistenceDiagram, "$pdiag2") == pdiag2
+        @test Ripser.parsebarcode(Float64, str2) ==
+            PersistenceBarcode(PersistencePair.([0.0, 1.0, 3.0], [1, 2, Inf]),
+                               PersistencePair.([4.0, 0.0, 1.0], [Inf, 4, 1]),
+                               PersistencePair.([0.0, 0.0, 1.0], [Inf, 1, Inf]))
     end
 
     @testset "invalid argument errors" begin
@@ -88,9 +73,8 @@ end
 
     @testset "float types" begin
         for T in [Float64, Float32, Float16]
-            diagram = ripser(rand(T, 10, 10))
-            @test eltype(diagram) == T
-            @test typeof(diagram) == PersistenceDiagram{T}
+            barcode = ripser(rand(T, 10, 10))
+            @test barcode isa PersistenceBarcode{T, Void}
         end
     end
 
@@ -107,25 +91,6 @@ end
         end
     end
 
-    @testset "plotting" begin
-        for f in readdir(joinpath(example_dir, "100"))
-            file = joinpath(example_dir, "100", f)
-            mat = read_lowertridist(file)
-            diagram = ripser(mat)
-            @test plot(diagram) ≠ nothing
-            @test plot(diagram, dims = 0) ≠ nothing
-            @test barcode(diagram) ≠ nothing
-            @test barcode(diagram, dims = 0) ≠ nothing
-            @test_throws ErrorException plot(diagram, dims = 1:100)
-            @test_throws ErrorException plot(diagram, dims = 100)
-            @test_throws ErrorException plot(diagram, dims = -1)
-            @test_throws ErrorException barcode(diagram, dims = 1:100)
-            @test_throws ErrorException barcode(diagram, dims = 100)
-            @test_throws ErrorException barcode(diagram, dims = -1)
-            @test_throws ErrorException barcode(zeros(3, 3))
-            @test_throws ErrorException barcode(diagram, 1:2)
-        end
-    end
 end
 
 @testset "compare with standalone" begin

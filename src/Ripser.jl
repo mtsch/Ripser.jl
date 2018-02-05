@@ -1,11 +1,13 @@
 module Ripser
 
-using RecipesBase
+using Suppressor
+using PersistenceBarcodes
 
-export ripser, PersistenceDiagram, dim, read_lowertridist, barcode
+export ripser, read_lowertridist,
+    PersistencePair, birth, death,
+    PersistenceBarcode, dim,
+    persistencediagram, persistencediagram!
 
-include("persistence_diagram.jl")
 include("ripser_interface.jl")
-include("plotting.jl")
 
 end

@@ -30,10 +30,13 @@ function getinf_maxval(pd::PersistenceDiagram, dims)
     infty, maxval
 end
 
-@recipe function f(pd::PersistenceDiagram; dims=nothing)
+@recipe function f(pd::PersistenceDiagram; dims=nothing, infinity=nothing)
     _dims = check_dims(pd, dims)
 
     infty, maxval = getinf_maxval(pd, _dims)
+    if infinity != nothing
+        infty = infinity
+    end
     padding = maxval * 0.1
 
     xlims --> (-padding, maxval)
@@ -72,7 +75,7 @@ end
 
 @userplot Barcode
 
-@recipe function f(b::Barcode; dims=nothing)
+@recipe function f(b::Barcode; dims=nothing, infinity=nothing)
     if length(b.args) ≠ 1 || !(typeof(first(b.args)) <: PersistenceDiagram)
         error("barcode is expecting a single PersistenceDiagram argument. " *
               "Got: $(typeof(b.args))")
@@ -83,6 +86,9 @@ end
     _dims = check_dims(pd, dims)
 
     infty, maxval = getinf_maxval(pd, _dims)
+    if infinity != nothing
+        infty = infinity
+    end
     xlim --> [0, maxval]
 
     h = 1

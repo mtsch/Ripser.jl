@@ -33,16 +33,19 @@ function ripser_interface(dist::Vector{Float32}, dim_max::Integer,
 
     origSTDOUT = STDOUT
     (r, w) = redirect_stdout()
-    ccall(ripser_fptr,
-          Void,
-          (Cint, Ptr{Float32}, Cint, Float32, Int16),
-          length(dist), dist,
-          dim_max, thresh, modulus)
-
-    close(w)
-    res_str = String(map(Char, readavailable(r)))
-    close(r)
-    redirect_stdout(origSTDOUT)
+    res_str = ""
+    try
+        ccall(ripser_fptr,
+              Void,
+              (Cint, Ptr{Float32}, Cint, Float32, Int16),
+              length(dist), dist,
+              dim_max, thresh, modulus)
+    finally
+        close(w)
+        res_str = String(map(Char, readavailable(r)))
+        close(r)
+        redirect_stdout(origSTDOUT)
+    end
 
     parse(PersistenceDiagram{T}, res_str)
 end

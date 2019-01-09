@@ -1,9 +1,10 @@
+#=
 """
     ripser(mat; dim_max = 1, thresh = Inf, modulus = 2)
 
 Run Ripser on given matrix and return a PersistenceDiagram.
 """
-function ripser(mat::AbstractMatrix{<:Real};
+function _ripser(mat::AbstractMatrix{<:Real};
                 dim_max = 1, thresh = Inf, modulus = 2)
 
     dist = Float32[]
@@ -50,8 +51,8 @@ Returns `LowerTriangular{Float32}`.
 The file should NOT contain the 0s on the diagonal.
 """
 function read_lowertridist(filename)
-    text = split.(split(readstring(filename), '\n'), ',')
-    while text[1] == [""] shift!(text) end
+    text = split.(split(read(filename, String), '\n'), ',')
+    while text[1] == [""] popfirst!(text) end
     while text[end] == [""] pop!(text) end
 
     n = length(text) + 1
@@ -65,21 +66,6 @@ function read_lowertridist(filename)
     end
 
     res
-end
-
-function isprime(n)
-    if iseven(n) || n < 2
-        n == 2
-    else
-        p = 3
-        q = n / p
-        while p ≤ q
-            iszero(n % p) && return false
-            p += 2
-            q = n / p
-        end
-        true
-    end
 end
 
 function parsebarcode(::Type{T}, str) where T
@@ -100,3 +86,4 @@ function parsebarcode(::Type{T}, str) where T
     end
     PersistenceBarcode(out)
 end
+=#

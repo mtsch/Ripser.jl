@@ -5,8 +5,8 @@ export ripser
 using SparseArrays
 using Libdl
 
-const libripser = joinpath(dirname(pathof(Ripser)), "../deps",
-                           @static Sys.iswindows() ? "libripser.dll" : "libripser.so")
+const ext = @static Sys.iswindows() ? ".dll" : Sys.isapple() ? ".dylib" : ".so"
+const libripser = joinpath(dirname(pathof(Ripser)), "../deps/usr/lib/libripser$ext")
 
 # The value_t type from ripser source code.
 const Cvalue_t = Cfloat

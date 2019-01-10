@@ -1,112 +1,71 @@
 using Ripser
-using Base.Test
+using Test
+using SparseArrays
+using Distances
 
-const example_dir = joinpath(Pkg.dir("Ripser"), "examples")
-
-"""
-Run the standalone version of ripser and return PersistenceBarcode.
-"""
-function runripser(filename; dim_max=1, modulus=2, thresh=Inf)
-    origSTDOUT = STDOUT
-    (r, w) = redirect_stdout()
-    if !isfinite(thresh)
-        run(`../deps/ripser.out $filename --dim $dim_max --modulus $modulus`)
-    else
-        run(`../deps/ripser.out $filename
-             --dim $dim_max --modulus $modulus --threshold $thresh`)
-    end
-    close(w)
-    res_str = String(map(Char, readavailable(r)))
-    close(r)
-    redirect_stdout(origSTDOUT)
-
-    Ripser.parsebarcode(Float64, res_str)
-end
-
-@testset "basics" begin
-    @testset "ripser output parsing" begin
-        str1 = """
-               some
-               header
-               text
-               persistence intervals in dim 0:
-                [0,0)
-               """
-        @test Ripser.parsebarcode(Float64, str1) ==
-            PersistenceBarcode([PersistencePair(0.0, 0.0)])
-
-        str2 = """
-               persistence intervals in dim 0:
-                [0,1)
-                [1,2)
-                [3, )
-               persistence intervals in dim 1:
-                [4, )
-                [0,4)
-                [1,1)
-               persistence intervals in dim 2:
-                [0, )
-                [0,1)
-                [1, )
-               """
-        @test Ripser.parsebarcode(Float64, str2) ==
-            PersistenceBarcode(PersistencePair.([0.0, 1.0, 3.0], [1, 2, Inf]),
-                               PersistencePair.([4.0, 0.0, 1.0], [Inf, 4, 1]),
-                               PersistencePair.([0.0, 0.0, 1.0], [Inf, 1, Inf]))
+@testset "Ripser" begin
+    @testset "flatten_distmat" begin
+        mat = [1 2 3; 2 1 4; 3 4 1]
+        @test Ripser.flatten_distmat(mat) == [2, 3, 4]
+        @test eltype(Ripser.flatten_distmat(mat)) == Ripser.Cvalue_t
     end
 
-    @testset "invalid argument errors" begin
-        example_file = joinpath(example_dir, "100", "torus_100.ldm")
-        data = read_lowertridist(example_file)
-
-        @test all(Ripser.isprime.([2, 3, 5, 7, 11, 13, 17, 19, 23, 29]))
-        @test all(.!Ripser.isprime.([1,  6,  8,  9,  12, 14,
-                                     15, 18, 20, 21, 27, 33]))
-
-        @test_throws ErrorException ripser(data, dim_max = -1)
-        @test_throws ErrorException ripser(data, modulus = 6)
-        @test_throws ErrorException ripser(data, modulus = 15)
-        @test_throws ErrorException ripser(data, thresh  = -0.1)
-        @test_throws ErrorException ripser(data, thresh  = 0)
-        @test_throws ErrorException ripser(data, thresh  = -5)
+    @testset "isprime" begin
+        @test !Ripser.isprime(1)
+        @test Ripser.isprime(2)
+        @test Ripser.isprime(3)
+        @test !Ripser.isprime(4)
+        @test Ripser.isprime(5)
+        @test !Ripser.isprime(6)
+        @test Ripser.isprime(7)
+        @test !Ripser.isprime(8)
+        @test !Ripser.isprime(9)
+        @test !Ripser.isprime(10)
+        @test Ripser.isprime(7867)
+        @test !Ripser.isprime(7869)
     end
 
-    @testset "float types" begin
-        for T in [Float64, Float32, Float16]
-            barcode = ripser(rand(T, 10, 10))
-            @test barcode isa PersistenceBarcode{T, Void}
+    @testset "check_args" begin
+        mat_square = zeros(3, 3)
+        mat_rect = zeros(2, 3)
+        @test_throws ArgumentError Ripser.check_args(mat_rect, 2, 1, Inf)
+        @test_throws ArgumentError Ripser.check_args(mat_square, -1, 1, Inf)
+        @test_throws ArgumentError Ripser.check_args(mat_square, 4, 1, Inf)
+        @test_throws ArgumentError Ripser.check_args(mat_square, 2, -1, Inf)
+        @test_throws ArgumentError Ripser.check_args(mat_square, 2, 1, 0)
+        @test_throws ArgumentError Ripser.check_args(mat_square, 2, 1, -1)
+    end
+
+    @testset "ripser dense" begin
+        square = Float64[0 1 2 1;
+                         1 0 1 2;
+                         2 1 0 1;
+                         1 2 1 0]
+        r = ripser(square)
+        @test r[1] == [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0), (0.0, Inf)]
+        @test r[2] == [(1.0, 2.0)]
+
+        two_squares = [square fill(Inf, 4, 4); fill(Inf, 4, 4) square]
+        r = ripser(two_squares)
+        @test r[1] == vcat(fill((0.0, 1.0), 6), fill((0.0, Inf), 2))
+        @test r[2] == [(1.0, 2.0), (1.0, 2.0)]
+
+        n = 100
+        dim = 3
+        circ = Matrix{Float64}(undef, (2, n))
+        for i in 1:n
+            t = 2rand()
+            circ[1, i] = sinpi(t)
+            circ[2, i] = cospi(t)
         end
-    end
+        r, c = ripser(pairwise(Euclidean(), circ), dim_max = dim, cocycles = true)
+        @test length(r[1]) == n
+        @test all(iszero, first.(r[1]))
+        @test r[1][end][2] == Inf
+        @test length(r[2]) == 1
 
-    @testset "matrix types" begin
-        # Test if using different kinds of matrices returns the same result.
-        for f in readdir(joinpath(example_dir, "20"))
-            file = joinpath(example_dir, "20", f)
-            mat = read_lowertridist(file)
-            @test ripser(mat) ==          # LowerTriangular
-                  ripser(mat') ==         # UpperTriangular
-                  ripser(sparse(mat)) ==  # SparseMatrixCSC
-                  ripser(full(mat)) ==    # Matrix
-                  ripser(Symmetric(mat')) # Symmetric
-        end
-    end
-
-end
-
-@testset "compare with standalone" begin
-    for dir in readdir(example_dir), m in [2,3,7], t in [0.1, 2.5, 5, Inf]
-        if dir == "1000"
-            dim_max = 1
-        elseif dir == "100"
-            dim_max = [1, 2]
-        else
-            dim_max = [1, 2, 3, 4]
-        end
-        for f in readdir(joinpath(example_dir, dir)), d in dim_max
-            file = joinpath(example_dir, dir, f)
-            data = read_lowertridist(file)
-            @test runripser(file, dim_max = d, modulus = m, thresh  = t) ==
-                  ripser(data, dim_max = d, modulus = m, thresh  = t)
+        for d in 1:dim+1
+            @test length(r[d]) == length(c[d])
         end
     end
 end

@@ -1,6 +1,3 @@
 [submodule "ripser/ripser"]
 	path = ripser/ripser
 	url = https://github.com/Ripser/ripser
-[submodule "deps/ripser"]
-	path = deps/ripser
-	url = https://github.com/Ripser/ripser

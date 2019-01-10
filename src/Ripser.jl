@@ -1,23 +1,17 @@
 module Ripser
 
-using Suppressor
-using PersistenceBarcodes
-
 export ripser
 
 using SparseArrays
 using Libdl
 
-#=
-const libripser = joinpath(pathof(Ripser), "deps",
-                           @static Sys.iswindows() ? "libripser.dll" : "libripser.so")
-=#
-const libripser = joinpath("..", "deps",
+const libripser = joinpath(dirname(pathof(Ripser)), "../deps",
                            @static Sys.iswindows() ? "libripser.dll" : "libripser.so")
 
 # The value_t type from ripser source code.
 const Cvalue_t = Cfloat
 
+# RawResult contains pointers to all output arrays required by ripser.
 struct RawResult{T}
     dim_max        ::Int
     n_intervals    ::Ref{Ptr{Cint}}
@@ -33,14 +27,13 @@ RawResult{T}(dim_max) where T =
                  Ref{Ptr{Cint}}(),
                  Ref{Ptr{Cint}}())
 
-# Ripser accepts a one-dimensional array.
-# This function converts a Matrix to Vector{Cvalue_t}.
-function flatten_distmat(dist)
-    dist_flat = Cvalue_t[]
-    for i in 1:size(dist, 1)-1, j in i+1:size(dist, 1)
-        push!(dist_flat, Cvalue_t(dist[j, i]))
+# Converts a Matrix to Vector{Cvalue_t} since ripser expects a flat array as input.
+function flatten_distmat(dists)
+    dists_flat = Cvalue_t[]
+    for i in 1:size(dists, 1)-1, j in i+1:size(dists, 1)
+        push!(dists_flat, Cvalue_t(dists[j, i]))
     end
-    dist_flat
+    dists_flat
 end
 
 function isprime(n)
@@ -58,46 +51,70 @@ function isprime(n)
     end
 end
 
-function check_args(dist, modulus, dim_max, threshold)
-    size(dist, 1) == size(dist, 2) || throw(ArgumentError("distance matrix must be square"))
+function check_args(dists, modulus, dim_max, threshold)
+    size(dists, 1) == size(dists, 2) || throw(ArgumentError("distance matrix must be square"))
     isprime(modulus) || throw(ArgumentError("modulus must be a prime number"))
     dim_max ≥ 0      || throw(ArgumentError("dim_max must be non-negative"))
     threshold > 0    || throw(ArgumentError("threshold must be positive"))
 end
 
-
-function unpackresults(raw::RawResult{T}) where T
+# Unpack RawResult{T} to Vector{Vector{Tuple{T, T}}}
+function unpackresults(raw::RawResult{T}, return_cocycles) where T
     dim_max = raw.dim_max
 
-    n_intervals = unsafe_wrap(Vector{Cint}, raw.n_intervals[], raw.dim_max + 1, own = false)
-    @show n_intervals
-    intervals = unsafe_wrap(Matrix{Cvalue_t}, raw.births_deaths[], (2, sum(n_intervals)), own = false)
-    cocycle_length = unsafe_wrap(Vector{Cint}, raw.cocycle_length[], sum(n_intervals), own = false)
+    n_intervals = unsafe_wrap(Vector{Cint}, raw.n_intervals[], raw.dim_max + 1, own = true)
+    intervals = unsafe_wrap(Matrix{Cvalue_t}, raw.births_deaths[], (2, sum(n_intervals)), own = true)
+    cocycle_length = unsafe_wrap(Vector{Cint}, raw.cocycle_length[], sum(n_intervals), own = true)
     if sum(cocycle_length) > 0
-        cocycles = unsafe_wrap(Vector{Cint}, raw.cocycles[], sum(cocycle_length), own = false)
+        cocycles_flat = unsafe_wrap(Vector{Cint}, raw.cocycles[], sum(cocycle_length), own = true)
+    end
+
+    if !return_cocycles
+        barcodes = Matrix{T}[]
+        start = 0
+        for int in n_intervals
+            push!(barcodes, T.(intervals[:, start+1:start+int]))
+            start += int
+        end
+
+        map(barcodes) do bc
+            collect(vec(reinterpret(Tuple{T, T}, bc)))
+        end
     else
-        cocycles = Cint[]
-    end
+        barcodes = Matrix{T}[]
+        cocycles = Vector{Vector{Int}}[]
 
-    barcodes = Matrix{T}[]
-    start = 0
-    for int in n_intervals
-        push!(barcodes, T.(intervals[:, start+1:start+int]))
-        start += int
-    end
+        start_bc = 0
+        start_cc = 0
+        for int in n_intervals
+            push!(barcodes, T.(intervals[:, start_bc+1:start_bc+int]))
+            push!(cocycles, Int[])
+            for i in 1:int
+                len = cocycle_length[start_bc + i]
+                push!(cocycles[end], cocycles_flat[start_cc+1:start_cc+len])
+                start_cc += len
+            end
+            start_bc += int
+        end
 
-    barcodes
+        map(barcodes) do bc
+            collect(vec(reinterpret(Tuple{T, T}, bc)))
+        end, cocycles
+    end
 end
 
-function ripser(dist::AbstractMatrix{T};
-                modulus = 2,
-                dim_max = 1,
-                threshold = Inf,
-                cocycles = false) where T
-    check_args(dist, modulus, dim_max, threshold)
+"""
+    ripser(dists; modulus = 2, dim_max = 1, threshold = Inf, cocycles = false)
+"""
+function ripser(dists     ::AbstractMatrix{T};
+                modulus   ::Integer = 2,
+                dim_max   ::Integer = 1,
+                threshold ::Real = Inf,
+                cocycles  ::Bool = false) where T<:AbstractFloat
+    check_args(dists, modulus, dim_max, threshold)
 
     res = RawResult{T}(dim_max)
-    dist_flat = flatten_distmat(dist)
+    dists_flat = flatten_distmat(dists)
 
     ripser_fptr = Libdl.dlsym(Libdl.dlopen(libripser), :c_rips_dm)
     n_edges = ccall(ripser_fptr,
@@ -106,20 +123,20 @@ function ripser(dist::AbstractMatrix{T};
                      Ptr{Cvalue_t}, Cint,
                      Cint, Cint, Cvalue_t, Cint),
                     res.n_intervals, res.births_deaths, res.cocycle_length, res.cocycles,
-                    dist_flat, length(dist_flat),
+                    dists_flat, length(dists_flat),
                     modulus, dim_max, threshold, cocycles)
 
-    unpackresults(res)
+    unpackresults(res, cocycles)
 end
 
-function ripser(dist::AbstractSparseMatrix{T},
+function ripser(dists::AbstractSparseMatrix{T},
                 modulus = 2,
                 dim_max = 1,
                 threshold = Inf,
                 cocycles = false) where T
-    check_args(dist, modulus, dim_max, threshold)
+    check_args(dists, modulus, dim_max, threshold)
 
-    I, J, V = findnz(dist)
+    I, J, V = findnz(dists)
     res = RawResult{T}(dim_max)
 
     ripser_fptr = Libdl.dlsym(Libdl.dlopen(libripser), :c_rips_dm_sparse)
@@ -129,30 +146,9 @@ function ripser(dist::AbstractSparseMatrix{T},
                      Ptr{Cint}, Ptr{Cint}, Ptr{Cvalue_t}, Cint, Cint,
                      Cint, Cint, Cvalue_t, Cint),
                     res.n_intervals, res.births_deaths, res.cocycle_length, res.cocycles,
-                    I, J, V, length(I), size(dist, 1),
+                    I, J, V, length(I), size(dists, 1),
                     modulus, dim_max, threshold, cocycles)
 
-    unpackresults(res)
+    unpackresults(res, cocycles)
 end
-
-using Distances
-using Plots
-
-function ncirc(n)
-    φ = 2π * rand(n)
-    pts = [cos.(φ)'; sin.(φ)']
-    pairwise(Euclidean(), pts)
-end
-
-function plotres(r)
-    plt = plot([0, 1.5], [0, 1.5])
-    for (i,a) in enumerate(r)
-        a = a[:, isfinite.(a[2, :])]
-        scatter!(plt, a[1,:], a[2,:], label = i)
-    end
-    plt
-end
-
-#S = ncirc(50)
-
 end

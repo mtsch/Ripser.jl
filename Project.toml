@@ -1,0 +1,15 @@
+name = "Ripser"
+uuid = "a065acc3-80ed-5c45-b435-18a3916a1fde"
+authors = ["mtsch <matijacufar@gmail.com>"]
+version = "0.2.0"
+
+[deps]
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+
+[targets]
+test = ["Test", "Distances"]

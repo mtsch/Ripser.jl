@@ -30,7 +30,7 @@ Run Ripser on a dists, a square matrix of `T<:AbstractFloat`, returning a `Vecto
 T}}`. If `cocycles` is set to `true`, also return a `Vector{Vector{Vector{Int}}}` that
 contains the representative cocycles.
 
-* `dists`: the distance matrix. Matrix can be sparse (experimental).
+* `dists`: the distance matrix. Matrix can be sparse.
 * `dim_max`: compute persistent homology up to this dimension.
 * `threshold`: compute Rips complexes up to this diameter.
 * `modulus`: compute homology with coefficients in the prime field Z/*p*Z,

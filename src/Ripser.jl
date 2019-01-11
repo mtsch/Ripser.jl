@@ -136,7 +136,7 @@ function ripser(dists     ::AbstractMatrix{T};
     unpackresults(res, cocycles)
 end
 
-function ripser(dists     ::AbstractSparseMatrix{T},
+function ripser(dists     ::AbstractSparseMatrix{T};
                 modulus   ::Integer = 2,
                 dim_max   ::Integer = 1,
                 threshold ::Real = Inf,

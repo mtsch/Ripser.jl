@@ -3,6 +3,33 @@ using Test
 using SparseArrays
 using Distances
 
+function circle(n)
+    circ = Matrix{Float64}(undef, (2, n))
+    for i in 1:n
+        φ = 2π * rand()
+        circ[1, i] = sin(φ)
+        circ[2, i] = cos(φ)
+    end
+    circ
+end
+
+function torus(n)
+    tor = Matrix{Float64}(undef, (3, n))
+    for i in 1:n
+        ϑ, φ = 2π .* rand(2)
+        tor[1, i] = (2 + cos(ϑ))cos(φ)
+        tor[2, i] = (2 + cos(ϑ))sin(φ)
+        tor[3, i] = sin(ϑ)
+    end
+    tor
+end
+
+function sparsify(M, τ)
+    copy(M)
+    M[M .> τ] .= 0
+    sparse(M)
+end
+
 @testset "Ripser" begin
     @testset "flatten_distmat" begin
         mat = [1 2 3; 2 1 4; 3 4 1]
@@ -37,6 +64,7 @@ using Distances
     end
 
     @testset "ripser dense" begin
+        # Simple cases, where we know what kind of barcode to expect.
         square = Float64[0 1 2 1;
                          1 0 1 2;
                          2 1 0 1;
@@ -50,22 +78,67 @@ using Distances
         @test r[1] == vcat(fill((0.0, 1.0), 6), fill((0.0, Inf), 2))
         @test r[2] == [(1.0, 2.0), (1.0, 2.0)]
 
+        # Create a circle with radius one, sampled randomly.
         n = 100
         dim = 3
-        circ = Matrix{Float64}(undef, (2, n))
-        for i in 1:n
-            t = 2rand()
-            circ[1, i] = sinpi(t)
-            circ[2, i] = cospi(t)
-        end
+        circ = circle(n)
         r, c = ripser(pairwise(Euclidean(), circ), dim_max = dim, cocycles = true)
-        @test length(r[1]) == n
-        @test all(iszero, first.(r[1]))
-        @test r[1][end][2] == Inf
+
+        # Zero-dimensional classes start at 0 and exactly one of them is infinite.
+        zeroth = r[1]
+        @test length(zeroth) == n
+        @test all(iszero, first.(zeroth))
+        @test all(isfinite, last.(zeroth[1:end-1]))
+        @test last(zeroth[end]) == Inf
+
+        # We expect one 1-dimensional class.
         @test length(r[2]) == 1
+
+        # There should be one cocycle for each bar in barcode.
+        for d in 1:dim+1
+            @test length(r[d]) == length(c[d])
+        end
+
+        # Create two circles. The barcode should have two long lines.
+        # Use modulus 3 to make sure it doesn't error.
+        circs = hcat(circle(n), 5circle(n))
+        r = ripser(pairwise(Euclidean(), circs), modulus = 3)
+        lengths = map(x -> x[2] - x[1], r[2])
+        @test length(r[1]) == 2n
+        @test length(filter(l -> l > 1, lengths)) == 2
+    end
+
+    @testset "ripser sparse" begin
+        # Circle, few points, higher dimension.
+        n = 100
+        τ = 1.0
+        dim = 3
+        circ = circle(n)
+        M = pairwise(Euclidean(), circ)
+        r, c = ripser(sparsify(M, τ), dim_max = dim, modulus = 5, cocycles = true)
+
+        @test length(r) == dim + 1
+        @test length(c) == dim + 1
 
         for d in 1:dim+1
             @test length(r[d]) == length(c[d])
         end
+
+        # Torus, more points.
+        n = 1000
+        τ = 3.0
+        dim = 1
+        tor = torus(n)
+        M = pairwise(Euclidean(), tor)
+        r, c = ripser(sparsify(M, τ), dim_max = dim, modulus = 29, cocycles = true)
+
+        @test length(r) == dim + 1
+        @test length(c) == dim + 1
+
+        for d in 1:dim+1
+            @test length(r[d]) == length(c[d])
+        end
+
+        # TODO: find a good example of using sparse.
     end
 end

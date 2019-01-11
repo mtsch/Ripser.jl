@@ -68,6 +68,8 @@ function unpackresults(raw::RawResult{T}, return_cocycles) where T
     cocycle_length = unsafe_wrap(Vector{Cint}, raw.cocycle_length[], sum(n_intervals), own = true)
     if sum(cocycle_length) > 0
         cocycles_flat = unsafe_wrap(Vector{Cint}, raw.cocycles[], sum(cocycle_length), own = true)
+    else
+        cocycles_flat = Cint[]
     end
 
     if !return_cocycles

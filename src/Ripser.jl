@@ -5,9 +5,13 @@ export ripser
 using SparseArrays
 using Libdl
 
-const ext = @static Sys.iswindows() ? ".dll" : Sys.isapple() ? ".dylib" : ".so"
-const lib = @static Sys.iswindows() ? "bin" : "lib"
-const libripser = joinpath(dirname(pathof(Ripser)), "../deps/usr/$lib/libripser$ext")
+const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
+if isfile(depsfile)
+    include("../deps/deps.jl")
+    check_deps()
+else
+    error("Ripser in not properly installed. Please run Pkg.build(\"Ripser\").")
+end
 
 # The value_t type from ripser source code.
 const Cvalue_t = Cfloat

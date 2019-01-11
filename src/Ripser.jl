@@ -59,7 +59,7 @@ function check_args(dists, modulus, dim_max, threshold)
     threshold > 0    || throw(ArgumentError("threshold must be positive"))
 end
 
-# Unpack RawResult{T} to Vector{Vector{Tuple{T, T}}}
+# Unpack RawResult{T} to barcode and cocycles (if return_cocycles is true)
 function unpackresults(raw::RawResult{T}, return_cocycles) where T
     dim_max = raw.dim_max
 
@@ -130,11 +130,11 @@ function ripser(dists     ::AbstractMatrix{T};
     unpackresults(res, cocycles)
 end
 
-function ripser(dists::AbstractSparseMatrix{T},
-                modulus = 2,
-                dim_max = 1,
-                threshold = Inf,
-                cocycles = false) where T
+function ripser(dists     ::AbstractSparseMatrix{T},
+                modulus   ::Integer = 2,
+                dim_max   ::Integer = 1,
+                threshold ::Real = Inf,
+                cocycles  ::Bool = false) where T<:AbstractFloat
     check_args(dists, modulus, dim_max, threshold)
 
     I, J, V = findnz(dists)

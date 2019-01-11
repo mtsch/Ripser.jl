@@ -9,9 +9,9 @@ julia:
 notifications:
   email: false
 
-matrix:
-  allow_failures:
-  - os: osx
+#matrix:
+#  allow_failures:
+#  - os: osx
 
 after_success:
   - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'

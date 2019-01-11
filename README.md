@@ -1,11 +1,12 @@
 # Ripser.jl
 
-<!---
 [![Build Status](https://travis-ci.org/mtsch/Ripser.jl.svg?branch=master)](https://travis-ci.org/mtsch/Ripser.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/le4fbrk5hsgnf3ax?svg=true)](https://ci.appveyor.com/project/mtsch/ripser-jl)
 [![codecov](https://codecov.io/gh/mtsch/Ripser.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mtsch/Ripser.jl)
-[![Coverage Status](https://coveralls.io/repos/github/mtsch/Ripser.jl/badge.svg?branch=master)](https://coveralls.io/github/mtsch/Ripser.jl?branch=master)
---->
+<!---
+[![Coverage -->
+<!--Status](https://coveralls.io/repos/github/mtsch/Ripser.jl/badge.svg?branch=master)](https://coveralls.io/github/mtsch/Ripser.jl?branch=master)
+-->
 
 Simple wrapper to [Ripser](https://github.com/Ripser/ripser) in Julia with almost no
 features and minimal dependencies.

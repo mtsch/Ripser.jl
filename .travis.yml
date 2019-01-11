@@ -10,7 +10,7 @@ notifications:
   email: false
 
 matrix:
-  allow_failures
+  allow_failures:
   - os: osx
 
 after_success:

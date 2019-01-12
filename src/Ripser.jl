@@ -63,17 +63,23 @@ end
 
 # Unpack RawResult{T} to barcode and cocycles (if return_cocycles is true)
 function unpackresults(raw::RawResult{T}, return_cocycles) where T
+    println("\nentering unpack")
     dim_max = raw.dim_max
 
     n_intervals = unsafe_wrap(Vector{Cint}, raw.n_intervals[], raw.dim_max + 1, own = true)
+    @show n_intervals
     intervals = unsafe_wrap(Matrix{Cvalue_t}, raw.births_deaths[], (2, sum(n_intervals)), own = true)
+    @show intervals
     cocycle_length = unsafe_wrap(Vector{Cint}, raw.cocycle_length[], sum(n_intervals), own = true)
+    @show cocycle_length
     if sum(cocycle_length) > 0
         cocycles_flat = unsafe_wrap(Vector{Cint}, raw.cocycles[], sum(cocycle_length), own = true)
     else
         cocycles_flat = Cint[]
     end
+    @show cocycles_flat
 
+    println("if !return_cocycles...")
     if !return_cocycles
         barcodes = Matrix{T}[]
         start = 0
@@ -82,6 +88,7 @@ function unpackresults(raw::RawResult{T}, return_cocycles) where T
             start += int
         end
 
+        println("exiting unpack\n")
         map(barcodes) do bc
             collect(vec(reinterpret(Tuple{T, T}, bc)))
         end
@@ -102,6 +109,7 @@ function unpackresults(raw::RawResult{T}, return_cocycles) where T
             start_bc += int
         end
 
+        println("exiting unpack\n")
         map(barcodes) do bc
             collect(vec(reinterpret(Tuple{T, T}, bc)))
         end, cocycles
@@ -139,9 +147,22 @@ function ripser(dists     ::AbstractSparseMatrix{T};
                 dim_max   ::Integer = 1,
                 threshold ::Real = Inf,
                 cocycles  ::Bool = false) where T<:AbstractFloat
+    println("""
+            ******************************************************************************
+            * sparse ripser called here                                                  *
+            ******************************************************************************
+            """)
     check_args(dists, modulus, dim_max, threshold)
+    @show modulus
+    @show dim_max
+    @show threshold
+    @show cocycles
+    println()
 
     I, J, V = findnz(dists)
+    @show I
+    @show J
+    @show V
     res = RawResult{T}(dim_max)
 
     ripser_fptr = Libdl.dlsym(Libdl.dlopen(libripser), :c_rips_dm_sparse)
@@ -153,7 +174,11 @@ function ripser(dists     ::AbstractSparseMatrix{T};
                     res.n_intervals, res.births_deaths, res.cocycle_length, res.cocycles,
                     I, J, V, length(I), size(dists, 1),
                     modulus, dim_max, threshold, cocycles)
+    @show n_edges
 
-    unpackresults(res, cocycles)
+    result = unpackresults(res, cocycles)
+    @show result
+    println("\n\n")
+    result
 end
 end

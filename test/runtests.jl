@@ -33,6 +33,7 @@ function sparsify(M, τ)
 end
 
 @testset "Ripser" begin
+    #=
     @testset "flatten_distmat" begin
         mat = [1 2 3; 2 1 4; 3 4 1]
         @test Ripser.flatten_distmat(mat) == [2, 3, 4]
@@ -109,6 +110,7 @@ end
         @test length(r[1]) == 2n
         @test length(filter(l -> l > 1, lengths)) == 2
     end
+    =#
 
     @testset "ripser sparse" begin
         # Circle, few points, higher dimension.
@@ -117,7 +119,7 @@ end
         dim = 3
         circ = circle(n)
         M = pairwise(Euclidean(), circ)
-        r, c = ripser(sparsify(M, τ))
+        r, c = ripser(sparsify(M, τ), dim_max = dim, cocycles = true)
         #r, c = ripser(sparsify(M, τ), dim_max = dim, modulus = 5, cocycles = true)
 
         @test length(r) == dim + 1

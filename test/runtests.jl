@@ -3,8 +3,10 @@ using Test
 using SparseArrays
 using Distances
 
+const Float = Int == Int64 ? Float64 : Float32
+
 function circle(n)
-    circ = Matrix{Float64}(undef, (2, n))
+    circ = Matrix{Float}(undef, (2, n))
     for i in 1:n
         φ = 2π * rand()
         circ[1, i] = sin(φ)
@@ -14,7 +16,7 @@ function circle(n)
 end
 
 function torus(n)
-    tor = Matrix{Float64}(undef, (3, n))
+    tor = Matrix{Float}(undef, (3, n))
     for i in 1:n
         ϑ, φ = 2π .* rand(2)
         tor[1, i] = (2 + cos(ϑ))cos(φ)
@@ -65,10 +67,10 @@ end
 
     @testset "ripser dense" begin
         # Simple cases, where we know what kind of barcode to expect.
-        square = Float64[0 1 2 1;
-                         1 0 1 2;
-                         2 1 0 1;
-                         1 2 1 0]
+        square = Float[0 1 2 1;
+                       1 0 1 2;
+                       2 1 0 1;
+                       1 2 1 0]
         r = ripser(square)
         @test r[1] == [(0.0, 1.0), (0.0, 1.0), (0.0, 1.0), (0.0, Inf)]
         @test r[2] == [(1.0, 2.0)]
@@ -125,7 +127,7 @@ end
         end
 
         # Torus, more points.
-        n = 1000
+        n = 300
         τ = 3.0
         dim = 1
         tor = torus(n)

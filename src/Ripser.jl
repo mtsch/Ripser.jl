@@ -1,17 +1,15 @@
 module Ripser
-
 export ripser
 
-using SparseArrays
-using Libdl
+using SparseArrays: AbstractSparseMatrix, findnz
 
 const depsfile = joinpath(dirname(@__DIR__), "deps", "deps.jl")
 if isfile(depsfile)
     include("../deps/deps.jl")
-    check_deps()
 else
     error("Ripser in not properly installed. Please run Pkg.build(\"Ripser\").")
 end
+__init__() = check_deps()
 
 # The value_t type from ripser source code.
 const Cvalue_t = Cfloat

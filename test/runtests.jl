@@ -129,7 +129,6 @@ end
             @test length(r[d]) == length(c[d])
         end
 
-        #=
         # Torus, more points.
         n = 300
         τ = 3.0
@@ -144,7 +143,6 @@ end
         for d in 1:dim+1
             @test length(r[d]) == length(c[d])
         end
-        =#
         # TODO: find a good example of using sparse.
     end
 end

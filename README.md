@@ -26,9 +26,7 @@ This package is unregistered. To install, run it with:
 ripser(dists; modulus = 2, dim_max = 1, threshold = Inf, cocycles = false)
 ```
 
-Run Ripser on a dists, a square matrix of `T<:AbstractFloat`, returning a `Vector{Tuple{T,
-T}}`. If `cocycles` is set to `true`, also return a `Vector{Vector{Vector{Int}}}` that
-contains the representative cocycles.
+Run Ripser on a dists, and a square (sparse) matrix of `T<:AbstractFloat`.
 
 * `dists`: the distance matrix. Matrix can be sparse.
 * `dim_max`: compute persistent homology up to this dimension.
@@ -36,3 +34,14 @@ contains the representative cocycles.
 * `modulus`: compute homology with coefficients in the prime field Z/*p*Z,
   where *p* is the value given.
 * `cocycles`: return representative cocycles.
+
+Returns a `Vector{Vector{Tuple{T, T}}}` and if `cocycles` is set to `true`, a
+`Vector{Vector{Tuple{Vector{Int64},Int64}}}`.
+
+The first part of the result contains a persistence diagram per each dimension (and is of
+length `dim_max + 1`). Each persistence diagram is a vector of tuples, where a tuple is the
+persistence pair `(birth, death)`. A single cocycle is represented as a vector of `(simplex,
+value)` pairs. They are only included if the `value` is nonzero. Each persistence pair gets
+a corresponding cocycle.
+
+Note that representative cocycles for the zeroth dimension are not computed.

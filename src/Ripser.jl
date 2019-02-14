@@ -61,15 +61,27 @@ function check_args(dists, modulus, dim_max, threshold)
     threshold > 0    || throw(ArgumentError("threshold must be positive"))
 end
 
+function split_cocycle(cocycle, dim)
+    c = Tuple{Vector{Int}, Int}[]
+    for i in 1:dim+2:length(cocycle)-dim-1
+        push!(c, (cocycle[i:i+dim] .+ 1, cocycle[i+dim+1]))
+    end
+    c
+end
+
 # Unpack RawResult{T} to barcode and cocycles (if return_cocycles is true)
-function unpackresults(raw::RawResult{T}, return_cocycles) where T
+function unpack_results(raw::RawResult{T}, return_cocycles) where T
     dim_max = raw.dim_max
 
-    n_intervals = unsafe_wrap(Vector{Cint}, raw.n_intervals[], raw.dim_max + 1, own = true)
-    intervals = unsafe_wrap(Matrix{Cvalue_t}, raw.births_deaths[], (2, sum(n_intervals)), own = true)
-    cocycle_length = unsafe_wrap(Vector{Cint}, raw.cocycle_length[], sum(n_intervals), own = true)
+    n_intervals = unsafe_wrap(Vector{Cint}, raw.n_intervals[], raw.dim_max + 1,
+                              own = true)
+    intervals = unsafe_wrap(Matrix{Cvalue_t}, raw.births_deaths[], (2, sum(n_intervals)),
+                            own = true)
+    cocycle_length = unsafe_wrap(Vector{Cint}, raw.cocycle_length[], sum(n_intervals),
+                                 own = true)
     if sum(cocycle_length) > 0
-        cocycles_flat = unsafe_wrap(Vector{Cint}, raw.cocycles[], sum(cocycle_length), own = true)
+        cocycles_flat = unsafe_wrap(Vector{Cint}, raw.cocycles[], sum(cocycle_length),
+                                    own = true)
     else
         cocycles_flat = Cint[]
     end
@@ -87,7 +99,7 @@ function unpackresults(raw::RawResult{T}, return_cocycles) where T
         end
     else
         barcodes = Matrix{T}[]
-        cocycles = Vector{Vector{Int}}[]
+        cocycles = Vector{Vector{Tuple{Vector{Int}, Int}}}[]
 
         start_bc = 0
         start_cc = 0
@@ -96,7 +108,9 @@ function unpackresults(raw::RawResult{T}, return_cocycles) where T
             push!(cocycles, Int[])
             for i in 1:int
                 len = cocycle_length[start_bc + i]
-                push!(cocycles[end], cocycles_flat[start_cc+1:start_cc+len])
+                push!(cocycles[end],
+                      split_cocycle(cocycles_flat[start_cc+1:start_cc+len],
+                                    length(cocycles)-1))
                 start_cc += len
             end
             start_bc += int
@@ -131,7 +145,7 @@ function ripser(dists     ::AbstractMatrix{T};
                     dists_flat, length(dists_flat),
                     modulus, dim_max, threshold, cocycles)
 
-    unpackresults(res, cocycles)
+    unpack_results(res, cocycles)
 end
 
 function ripser(dists     ::AbstractSparseMatrix{T};
@@ -141,7 +155,9 @@ function ripser(dists     ::AbstractSparseMatrix{T};
                 cocycles  ::Bool = false) where T<:AbstractFloat
     check_args(dists, modulus, dim_max, threshold)
 
-    I, J, V = findnz(dists)
+    J, I, V = findnz(dists)
+    I .-= 1
+    J .-= 1
     res = RawResult{T}(dim_max)
 
     ripser_fptr = Libdl.dlsym(Libdl.dlopen(libripser), :c_rips_dm_sparse)
@@ -151,9 +167,9 @@ function ripser(dists     ::AbstractSparseMatrix{T};
                      Ptr{Cint}, Ptr{Cint}, Ptr{Cvalue_t}, Cint, Cint,
                      Cint, Cint, Cvalue_t, Cint),
                     res.n_intervals, res.births_deaths, res.cocycle_length, res.cocycles,
-                    I, J, V, length(I), size(dists, 1),
+                    Cint.(I), Cint.(J), Cvalue_t.(V), length(I), size(dists, 1),
                     modulus, dim_max, threshold, cocycles)
 
-    unpackresults(res, cocycles)
+    unpack_results(res, cocycles)
 end
 end

@@ -97,17 +97,40 @@ end
         @test length(r[2]) == 1
 
         # There should be one cocycle for each bar in barcode.
-        for d in 1:dim+1
-            @test length(r[d]) == length(c[d])
+        @test map(length, r) == map(length, c)
+        # All simplices in cocycles have value 1.
+        for i in 2:dim+1
+            for coc in c[i]
+                @test all(v -> length(v[1]) == i, coc)
+                @test all(v -> v[2] == 1, coc)
+            end
         end
 
         # Create two circles. The barcode should have two long lines.
-        # Use modulus 3 to make sure it doesn't error.
+        dim = 2
         circs = hcat(circle(n), 5circle(n))
-        r = ripser(pairwise(Euclidean(), circs), modulus = 3)
+        r, c = ripser(pairwise(Euclidean(), circs), modulus = 3, dim_max = dim, cocycles = true)
         lengths = map(x -> x[2] - x[1], r[2])
         @test length(r[1]) == 2n
         @test length(filter(l -> l > 1, lengths)) == 2
+
+        # There should be one cocycle for each bar in barcode.
+        @test map(length, r) == map(length, c)
+        # All cocycles have value 1 or 2.
+        for i in 2:dim+1
+            for coc in c[i]
+                @test all(v -> length(v[1]) == i, coc)
+                @test all(v -> -1 ≤ v[2] ≤ 1, coc)
+            end
+        end
+
+        # More points, torus.
+        n = 1000
+        τ = 3.0
+        dim = 1
+        tor = torus(n)
+        M = pairwise(Euclidean(), tor)
+        r, c = ripser(M, dim_max = dim, modulus = 29)
     end
 
     @testset "ripser sparse" begin
@@ -122,8 +145,13 @@ end
         @test length(r) == dim + 1
         @test length(c) == dim + 1
 
-        for d in 1:dim+1
-            @test length(r[d]) == length(c[d])
+        @test map(length, r) == map(length, c)
+
+        for i in 2:dim+1
+            for coc in c[i]
+                @test all(v -> length(v[1]) == i, coc)
+                @test all(v -> -2 ≤ v[2] ≤ 2, coc)
+            end
         end
 
         # Torus, more points.
@@ -132,15 +160,9 @@ end
         dim = 1
         tor = torus(n)
         M = pairwise(Euclidean(), tor)
-        r, c = ripser(sparsify(M, τ), dim_max = dim, modulus = 29, cocycles = true)
+        r = ripser(sparsify(M, τ), dim_max = dim, modulus = 29)
 
         @test length(r) == dim + 1
-        @test length(c) == dim + 1
-
-        for d in 1:dim+1
-            @test length(r[d]) == length(c[d])
-        end
-
-        # TODO: find a good example of using sparse.
+        @test length(r[1]) == n
     end
 end

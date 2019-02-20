@@ -27,7 +27,7 @@ function torus(n)
 end
 
 function sparsify(M, τ)
-    copy(M)
+    M = copy(M)
     M[M .> τ] .= 0
     sparse(M)
 end
@@ -116,7 +116,7 @@ end
 
         # There should be one cocycle for each bar in barcode.
         @test map(length, r) == map(length, c)
-        # All cocycles have value 1 or 2.
+        # All cocycles have value 1 or -1.
         for i in 2:dim+1
             for coc in c[i]
                 @test all(v -> length(v[1]) == i, coc)
@@ -139,30 +139,41 @@ end
         τ = 1.0
         dim = 3
         circ = circle(n)
-        M = pairwise(Euclidean(), circ)
-        r, c = ripser(sparsify(M, τ), dim_max = dim, modulus = 5, cocycles = true)
+        dists = pairwise(Euclidean(), circ)
+        r_sparse, c_sparse =
+            ripser(sparsify(dists, τ), dim_max = dim, modulus = 5, cocycles = true)
 
-        @test length(r) == dim + 1
-        @test length(c) == dim + 1
-
-        @test map(length, r) == map(length, c)
+        # Check structure of intervals and cycles.
+        @test length(r_sparse) == dim + 1
+        @test length(c_sparse) == dim + 1
+        @test map(length, r_sparse) == map(length, c_sparse)
 
         for i in 2:dim+1
-            for coc in c[i]
+            for coc in c_sparse[i]
                 @test all(v -> length(v[1]) == i, coc)
                 @test all(v -> -2 ≤ v[2] ≤ 2, coc)
             end
         end
 
+        # Thresholding is the same as removing long edges.
+        r_thresh, c_thresh =
+            ripser(dists, dim_max = dim, modulus = 5, cocycles = true, threshold = τ)
+        @test r_thresh == r_sparse
+        @test c_thresh == c_sparse
+
         # Torus, more points.
-        n = 300
+        n = 1000
         τ = 3.0
         dim = 1
         tor = torus(n)
-        M = pairwise(Euclidean(), tor)
-        r = ripser(sparsify(M, τ), dim_max = dim, modulus = 29)
+        dists = pairwise(Euclidean(), tor)
+        r_sparse = ripser(sparsify(dists, τ), dim_max = dim, modulus = 29)
 
-        @test length(r) == dim + 1
-        @test length(r[1]) == n
+        @test length(r_sparse) == dim + 1
+        @test length(r_sparse[1]) == n
+
+        # Thresholding is the same as removing long edges.
+        r_thresh = ripser(dists, dim_max = dim, modulus = 29, threshold = τ)
+        @test r_thresh == r_sparse
     end
 end

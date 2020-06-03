@@ -11,6 +11,9 @@
 Simple wrapper to [Ripser](https://github.com/Ripser/ripser) in Julia with almost no
 features and minimal dependencies.
 
+Ripser.jl _should_ work, but is not maintained. If you are interested in this project, it
+might be worth taking a look at [Ripserer.jl](https://github.com/mtsch/Ripserer.jl).
+
 ## Installation
 
 This package is unregistered. To install, run it with:
